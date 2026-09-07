@@ -5,7 +5,8 @@
  * string (the same shape createInanduGridDataSource uses) and sent to the ASP.NET Core API, which
  * answers with one page via `IReadOnlyList<Product>.ToInanduGrid(...)`.
  */
-import 'zone.js';
+import 'zone.js'; // change-detection scheduler — must load before bootstrapApplication
+import '@angular/compiler'; // enables JIT template compilation for this esbuild bundle
 import { Component, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import {
