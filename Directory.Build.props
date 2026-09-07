@@ -14,9 +14,9 @@
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 
-  <!-- NuGet package metadata. Only src/InanduGrid.ServerSide sets IsPackable=true. -->
+  <!-- NuGet package metadata. Only src/Inandu.Grid.Extensions sets IsPackable=true. -->
   <PropertyGroup>
-    <Product>InanduGrid.ServerSide</Product>
+    <Product>Inandu.Grid.Extensions</Product>
     <Company>Inandu SAS</Company>
     <Authors>Inandu SAS</Authors>
     <Copyright>Copyright © Inandu SAS</Copyright>

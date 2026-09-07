@@ -4,6 +4,7 @@
     <TargetFrameworks>net8.0</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net8.0;net10.0</TargetFrameworks>
     <RootNamespace>Inandu.Grid.Extensions.Tests</RootNamespace>
+    <AssemblyName>Inandu.Grid.Extensions.Tests</AssemblyName>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <Nullable>enable</Nullable>
@@ -26,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/InanduGrid.ServerSide/InanduGrid.ServerSide.csproj" />
+    <ProjectReference Include="../../src/Inandu.Grid.Extensions/Inandu.Grid.Extensions.csproj" />
   </ItemGroup>
 
 </Project>

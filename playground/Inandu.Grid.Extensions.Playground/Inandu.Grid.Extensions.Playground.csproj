@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Inandu.Grid.Extensions.Playground</RootNamespace>
+    <AssemblyName>Inandu.Grid.Extensions.Playground</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
@@ -16,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/InanduGrid.ServerSide/InanduGrid.ServerSide.csproj" />
+    <ProjectReference Include="../../src/Inandu.Grid.Extensions/Inandu.Grid.Extensions.csproj" />
   </ItemGroup>
 
   <!-- The Angular front end is built separately (playground/web) into wwwroot/bundle.js;

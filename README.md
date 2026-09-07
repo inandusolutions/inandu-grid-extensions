@@ -1,4 +1,4 @@
-# InanduGrid.ServerSide
+# Inandu.Grid.Extensions
 
 Server-side **paging, sorting and filtering** for
 [`@inandu-solutions/grid-angular`](https://www.npmjs.com/package/@inandu-solutions/grid-angular).
@@ -24,7 +24,7 @@ Multi-targets **`net8.0`** and **`net10.0`**.
 ## Install
 
 ```bash
-dotnet add package InanduGrid.ServerSide
+dotnet add package Inandu.Grid.Extensions
 ```
 
 ## Quick start

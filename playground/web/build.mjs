@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outfile = join(here, '../InanduGrid.ServerSide.Playground/wwwroot/bundle.js');
+const outfile = join(here, '../Inandu.Grid.Extensions.Playground/wwwroot/bundle.js');
 const watch = process.argv.includes('--watch');
 
 if (!existsSync(join(here, 'node_modules/@inandu-solutions/grid-angular'))) {

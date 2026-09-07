@@ -2,7 +2,7 @@
   "name": "inandu-grid-serverside-playground-web",
   "private": true,
   "version": "0.1.0",
-  "description": "Angular front end for the InanduGrid.ServerSide playground — a real <inandu-grid serverSide> pointed at the ASP.NET Core API.",
+  "description": "Angular front end for the Inandu.Grid.Extensions playground — a real <inandu-grid serverSide> pointed at the ASP.NET Core API.",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

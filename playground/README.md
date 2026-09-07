@@ -5,7 +5,7 @@ in-memory catalogue of 10,000 products with a single `ToInanduGrid()` call.
 
 ```
 playground/
-├── InanduGrid.ServerSide.Playground/   ASP.NET Core minimal API  (GET /api/products, Swagger)
+├── Inandu.Grid.Extensions.Playground/   ASP.NET Core minimal API  (GET /api/products, Swagger)
 └── web/                                Angular front end (standalone <inandu-grid>), bundled with esbuild
 ```
 
@@ -16,7 +16,7 @@ playground/
    ```bash
    cd playground/web
    npm install
-   npm run build          # → ../InanduGrid.ServerSide.Playground/wwwroot/bundle.js
+   npm run build          # → ../Inandu.Grid.Extensions.Playground/wwwroot/bundle.js
    ```
 
    Use `npm run watch` while hacking on `main.ts`.
@@ -24,7 +24,7 @@ playground/
 2. **Run the API** (needs the .NET 8 SDK):
 
    ```bash
-   cd playground/InanduGrid.ServerSide.Playground
+   cd playground/Inandu.Grid.Extensions.Playground
    dotnet run
    ```
 

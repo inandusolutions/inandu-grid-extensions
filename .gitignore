@@ -29,8 +29,8 @@ npm-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 playground/web/dist/
-playground/InanduGrid.ServerSide.Playground/wwwroot/bundle.js
-playground/InanduGrid.ServerSide.Playground/wwwroot/bundle.js.map
+playground/Inandu.Grid.Extensions.Playground/wwwroot/bundle.js
+playground/Inandu.Grid.Extensions.Playground/wwwroot/bundle.js.map
 
 # ---- OS ----
 .DS_Store

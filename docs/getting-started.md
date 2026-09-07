@@ -3,7 +3,7 @@
 ## 1. Install
 
 ```bash
-dotnet add package InanduGrid.ServerSide
+dotnet add package Inandu.Grid.Extensions
 ```
 
 Multi-targets `net8.0` and `net10.0`.

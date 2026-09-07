@@ -1,5 +1,5 @@
 /**
- * InanduGrid.ServerSide playground front end.
+ * Inandu.Grid.Extensions playground front end.
  *
  * A real <inandu-grid serverSide> whose sort / page / filter events are turned into a REST query
  * string (the same shape createInanduGridDataSource uses) and sent to the ASP.NET Core API, which
@@ -44,7 +44,7 @@ const API = '/api/products';
   imports: [InanduGridComponent, InanduColumnComponent],
   template: `
     <header>
-      <h1>InanduGrid.ServerSide — playground</h1>
+      <h1>Inandu.Grid.Extensions — playground</h1>
       <p>
         Every sort, page and filter round-trips to
         <code>GET {{ lastUrl() }}</code> and comes back as one page from
