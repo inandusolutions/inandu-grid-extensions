@@ -1,0 +1,28 @@
+{
+  "name": "inandu-grid-serverside-playground-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Angular front end for the InanduGrid.ServerSide playground — a real <inandu-grid serverSide> pointed at the ASP.NET Core API.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "@angular/cdk": "^21.2.0",
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "@inandu-solutions/grid-angular": "^1.0.0",
+    "@ngx-translate/core": "^18.0.0",
+    "jspdf": "^4.2.1",
+    "rxjs": "^7.8.0",
+    "tslib": "^2.6.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "~5.9.0"
+  }
+}

@@ -1,0 +1,39 @@
+<Project>
+
+  <!-- Shared settings for every project in the repo. Project-specific overrides live in each .csproj. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata. Only src/InanduGrid.ServerSide sets IsPackable=true. -->
+  <PropertyGroup>
+    <Product>InanduGrid.ServerSide</Product>
+    <Company>Inandu SAS</Company>
+    <Authors>Inandu SAS</Authors>
+    <Copyright>Copyright © Inandu SAS</Copyright>
+    <PackageProjectUrl>https://inandu.com</PackageProjectUrl>
+    <RepositoryUrl>https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>inandu-grid;angular;data-grid;server-side;paging;sorting;filtering;linq;aspnetcore</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+</Project>

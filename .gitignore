@@ -1,0 +1,37 @@
+# ---- .NET ----
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nupkg
+*.snupkg
+BenchmarkDotNet.Artifacts/
+.idea/
+*.DotSettings.user
+TestResults/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.trx
+
+# ---- Node (playground/web) ----
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+playground/web/dist/
+playground/InanduGrid.ServerSide.Playground/wwwroot/bundle.js
+playground/InanduGrid.ServerSide.Playground/wwwroot/bundle.js.map
+
+# ---- OS ----
+.DS_Store
+Thumbs.db

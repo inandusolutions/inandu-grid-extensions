@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InanduGrid.ServerSide — playground</title>
+    <style>
+      body { margin: 0; background: #fafafa; }
+      .missing-bundle { max-width: 640px; margin: 4rem auto; font-family: system-ui, sans-serif; color: #444; }
+      code { background: #eee; padding: .1rem .35rem; border-radius: 3px; }
+    </style>
+  </head>
+  <body>
+    <app-root>
+      <div class="missing-bundle">
+        <h1>Build the front end first</h1>
+        <p>
+          This page needs <code>bundle.js</code>. From <code>playground/web</code>:
+        </p>
+        <pre>npm install
+npm run build</pre>
+        <p>then run the API (<code>dotnet run</code> in <code>playground/InanduGrid.ServerSide.Playground</code>) and reload.</p>
+      </div>
+    </app-root>
+    <script type="module" src="/bundle.js"></script>
+  </body>
+</html>

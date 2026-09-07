@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>InanduGrid.ServerSide</RootNamespace>
+    <AssemblyName>InanduGrid.ServerSide</AssemblyName>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>InanduGrid.ServerSide</PackageId>
+    <Version>0.1.0</Version>
+    <Description>Server-side paging, sorting and filtering for @inandu-solutions/grid-angular. A dependency-free ToInanduGrid() LINQ extension that turns an inandu-grid serverSide request into a single page of data plus the total count. Runs on .NET 8 and later.</Description>
+    <PackageReleaseNotes>See CHANGELOG.md.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="/" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)../../LICENSE" Pack="true" PackagePath="/" Visible="false" />
+  </ItemGroup>
+
+</Project>
