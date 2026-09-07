@@ -1,20 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- Multi-targets net8.0 + net10.0 when a .NET 10+ SDK is present; falls back to net8.0 only
+         on the .NET 8 SDK so the repo still builds there. Release packages should be produced with
+         the .NET 10 SDK to ship both target frameworks. -->
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net8.0;net10.0</TargetFrameworks>
+
     <RootNamespace>InanduGrid.ServerSide</RootNamespace>
     <AssemblyName>InanduGrid.ServerSide</AssemblyName>
 
     <IsPackable>true</IsPackable>
     <PackageId>InanduGrid.ServerSide</PackageId>
+    <Title>InanduGrid.ServerSide</Title>
     <Version>0.1.0</Version>
-    <Description>Server-side paging, sorting and filtering for @inandu-solutions/grid-angular. A dependency-free ToInanduGrid() LINQ extension that turns an inandu-grid serverSide request into a single page of data plus the total count. Runs on .NET 8 and later.</Description>
-    <PackageReleaseNotes>See CHANGELOG.md.</PackageReleaseNotes>
+    <Description>Server-side paging, sorting and filtering for @inandu-solutions/grid-angular. A dependency-free ToInanduGrid() LINQ extension that turns an inandu-grid serverSide request into a single page of data plus the total count. Targets .NET 8 and .NET 10.</Description>
+    <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="/" Visible="false" />
-    <None Include="$(MSBuildThisFileDirectory)../../LICENSE" Pack="true" PackagePath="/" Visible="false" />
   </ItemGroup>
 
 </Project>

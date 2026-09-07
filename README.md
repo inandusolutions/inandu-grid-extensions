@@ -17,7 +17,7 @@ One extension method — `ToInanduGrid()` — takes the request an `<inandu-grid
   mirrors the core `InanduGridColumnFilterValue`.
 - **Free / MIT**, published to NuGet.
 
-Runs on **.NET 8** and later.
+Multi-targets **`net8.0`** and **`net10.0`**.
 
 ---
 
@@ -121,6 +121,10 @@ See **[docs/options.md](docs/options.md)**. Highlights: `DefaultPageSize`, `MaxP
 dotnet build
 dotnet test
 ```
+
+The library multi-targets `net8.0;net10.0` **when built with the .NET 10 SDK**; with only the
+.NET 8 SDK it builds `net8.0` alone (see the condition in the `.csproj`). Produce release packages
+with the .NET 10 SDK so the `.nupkg` ships both. See [docs/publishing.md](docs/publishing.md).
 
 ## Contributing
 

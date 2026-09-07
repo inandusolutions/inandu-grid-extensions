@@ -8,6 +8,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.0] - 2026-09-07
 
+### Packaging
+
+- Multi-targets `net8.0` and `net10.0` (the `net10.0` target is added only when built with a
+  .NET 10+ SDK — see `docs/publishing.md`).
+- No runtime dependencies. XML docs and `README.md` are packed; symbols ship as `.snupkg`.
+
 ### Added
 
 - `ToInanduGrid<T>(this IEnumerable<T>, InanduGridOptions?)` and the `IQueryable<T>`
