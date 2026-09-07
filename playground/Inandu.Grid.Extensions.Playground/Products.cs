@@ -7,6 +7,9 @@ public enum ProductStatus
     Archived = 2,
 }
 
+/// <summary>Slim projection returned by <c>/api/products/summary</c>.</summary>
+public sealed record ProductSummary(int Id, string Name, decimal Price, ProductStatus Status);
+
 public sealed class Product
 {
     public int Id { get; set; }

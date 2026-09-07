@@ -19,6 +19,14 @@ One extension method — `ToInanduGrid()` — takes the request an `<inandu-grid
 
 Multi-targets **`net8.0`** and **`net10.0`**.
 
+### Packages
+
+| Package | For |
+|---|---|
+| `Inandu.Grid.Extensions` | the core `ToInanduGrid()` — zero dependencies |
+| `Inandu.Grid.Extensions.EntityFrameworkCore` | `ToInanduGridAsync()` — `CountAsync` + `ToListAsync` |
+| `Inandu.Grid.Extensions.AspNetCore` | `[FromInanduGrid]` model binder + minimal-API binding |
+
 ---
 
 ## Install
@@ -57,17 +65,45 @@ public ActionResult<InanduGridResult<Product>> Get()
 
 ### EF Core (async)
 
-`ToInanduGrid` on an `IQueryable<T>` runs synchronously (`Count()` + `ToList()`). For `async`, use
-`ApplyInanduGridQuery` and run your own `CountAsync` / `ToListAsync`:
+```bash
+dotnet add package Inandu.Grid.Extensions.EntityFrameworkCore
+```
 
 ```csharp
-var query = db.Products.AsNoTracking().ApplyInanduGridQuery(InanduGridOptions.FromQueryString(qs));
+using Inandu.Grid.Extensions.EntityFrameworkCore;
 
-var total = await query.FilteredQuery.CountAsync(ct);
-var rows  = await query.PagedQuery.ToListAsync(ct);
-
-return query.ToResult(rows, total);
+app.MapGet("/api/orders", (HttpRequest req, AppDb db, CancellationToken ct) =>
+    db.Orders.AsNoTracking().ToInanduGridAsync(req.QueryString.Value, ct: ct));
 ```
+
+`ToInanduGridAsync` runs `CountAsync` + `ToListAsync` under the hood. There are projected
+(`ToInanduGridAsync(selector, …)`) and grouped (`ToInanduGridGroupedAsync`) overloads too. Without
+the package, `ApplyInanduGridQuery` gives you the composed `FilteredQuery` / `PagedQuery` to
+`await` yourself.
+
+### `[FromInanduGrid]` — ASP.NET Core binding
+
+```bash
+dotnet add package Inandu.Grid.Extensions.AspNetCore
+```
+
+```csharp
+using Inandu.Grid.Extensions.AspNetCore;
+
+// MVC controller
+[HttpGet]
+public ActionResult<InanduGridResult<Product>> Get([FromInanduGrid] InanduGridRequest request)
+    => _products.ToInanduGrid(InanduGridOptions.For(request));
+
+// …or bind every InanduGridRequest parameter without the attribute
+builder.Services.AddControllers().AddInanduGridModelBinding();
+
+// minimal API
+app.MapGet("/api/products", async (HttpRequest req) =>
+    _products.ToInanduGrid(InanduGridOptions.For(await InanduGridBinding.FromHttpRequestAsync(req))));
+```
+
+`InanduGridBinding` reads the query string, or a JSON body for a POST.
 
 ### Bind the request yourself (JSON body, gRPC, tests…)
 
@@ -79,6 +115,36 @@ into `InanduGridRequest` (a bundled `System.Text.Json` converter accepts `"asc"`
 ```csharp
 app.MapPost("/api/products/query", (InanduGridRequest request) =>
     _products.ToInanduGrid(request, o => o.MaxPageSize = 200));
+```
+
+## Return a DTO, not the entity
+
+`ToInanduGrid<TSource, TResult>(selector, …)` sorts and filters on the entity, then projects the
+page — over EF Core the projection is part of the SQL, so only the DTO's columns are read:
+
+```csharp
+db.Orders.ToInanduGrid(
+    o => new OrderDto(o.Id, o.Reference, o.Customer.Name, o.Total),
+    Request.QueryString.Value,
+    cfg => cfg.FieldMap = new() { ["customer"] = "Customer.Name" }); // filter/sort by Customer.Name
+```
+
+## Advanced filter (nested AND / OR)
+
+`@inandu-solutions/grid-pro`'s query builder can serialise its tree with `advancedQueryToRestParams`
+into a `filter=<json>` param. This library parses it (`InanduGridRequest.Filter` / `.AdvancedFilter`)
+and applies it as an extra `AND` — operators include `between`, `notContains`, `isTrue/isFalse`,
+`isEmpty/isNotEmpty`. See **[docs/advanced-filter.md](docs/advanced-filter.md)**.
+
+## Server-side grouping
+
+`ToInanduGridGrouped()` — `groupBy=region,category` returns the level's `{ key, count }` groups;
+`groupKeys=EMEA` drills in (the next level, or the group's rows past the last `groupBy`). Filters,
+free-text and the advanced filter all still apply. See **[docs/grouping.md](docs/grouping.md)**.
+
+```csharp
+var result = db.Sales.ToInanduGridGrouped(InanduGridOptions.FromQueryString(qs));
+return result.IsLeaf ? Results.Ok(result.Rows) : Results.Ok(result.Groups);
 ```
 
 ## The Angular side
@@ -108,6 +174,8 @@ See **[docs/request-contract.md](docs/request-contract.md)** for the full parame
 | `sort` | Comma-separated; `-` prefix = descending. Repeatable. |
 | `q` | Free-text search across `SearchableFields`. |
 | `{field}_{op}` | A filter, `op` ∈ `eq neq contains startsWith endsWith gt gte lt lte in`. |
+| `filter` | JSON advanced-filter tree (nested AND / OR). |
+| `groupBy`, `groupKeys` | Server-side grouping + drill-down (`ToInanduGridGrouped`). |
 
 ## Configuration
 
@@ -115,16 +183,18 @@ See **[docs/options.md](docs/options.md)**. Highlights: `DefaultPageSize`, `MaxP
 `SearchableFields`, `StringComparison`, `FieldMap` (grid field → CLR path), `ThrowOnUnknownField`,
 `Culture`.
 
-## Build & test
+## Build, test & benchmark
 
 ```bash
 dotnet build
-dotnet test
+dotnet test                                                   # 130 tests, net8.0 + net10.0
+dotnet run -c Release --project benchmarks/Inandu.Grid.Extensions.Benchmarks
 ```
 
-The library multi-targets `net8.0;net10.0` **when built with the .NET 10 SDK**; with only the
-.NET 8 SDK it builds `net8.0` alone (see the condition in the `.csproj`). Produce release packages
-with the .NET 10 SDK so the `.nupkg` ships both. See [docs/publishing.md](docs/publishing.md).
+The libraries multi-target `net8.0;net10.0` **when built with the .NET 10 SDK**; with only the
+.NET 8 SDK they build `net8.0` alone (see the condition in each `.csproj`). Produce release
+packages with the .NET 10 SDK so the `.nupkg`s ship both. See
+[docs/publishing.md](docs/publishing.md).
 
 ## Contributing
 

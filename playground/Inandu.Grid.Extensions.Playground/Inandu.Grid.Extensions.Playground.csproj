@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Inandu.Grid.Extensions/Inandu.Grid.Extensions.csproj" />
+    <ProjectReference Include="../../src/Inandu.Grid.Extensions.AspNetCore/Inandu.Grid.Extensions.AspNetCore.csproj" />
   </ItemGroup>
 
   <!-- The Angular front end is built separately (playground/web) into wwwroot/bundle.js;

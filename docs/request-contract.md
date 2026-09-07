@@ -33,6 +33,21 @@ A leading `+` is allowed and ignored. Aliases: `orderby`, `order`.
 |---|---|
 | `q` | Matched with `contains` against every field in `InanduGridOptions.SearchableFields` (OR-combined). `null` searchable-fields ⇒ every `string` property. Aliases: `query`, `search`, `term`. |
 
+## Advanced filter
+
+| Param | Meaning |
+|---|---|
+| `filter` | A JSON advanced-filter tree (nested AND / OR) — the value `@inandu-solutions/grid-pro`'s `advancedQueryToRestParams` emits. Parsed into `InanduGridRequest.AdvancedFilter`, applied as an extra `AND`. Alias: `advancedFilter`. Blank / malformed → ignored. See [advanced-filter.md](advanced-filter.md). |
+
+## Grouping (`ToInanduGridGrouped`)
+
+| Param | Meaning |
+|---|---|
+| `groupBy` | Comma-separated group fields, outermost first (`groupBy=region,category`). |
+| `groupKeys` | The already-expanded path for a drill-down (`groupKeys=EMEA` / `groupKeys=EMEA,2026`); each value is `eq`-matched against the corresponding `groupBy` field. |
+
+See [grouping.md](grouping.md).
+
 ## Column filters
 
 Flat form — one param per condition, key is `{field}_{operator}`:

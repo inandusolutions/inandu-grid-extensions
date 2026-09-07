@@ -105,6 +105,16 @@ public static class InanduGridQueryableExtensions
         this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector, string? queryString, Action<InanduGridOptions>? configure = null)
         => source.ToInanduGrid(selector, InanduGridOptions.FromQueryString(queryString, configure));
 
+    /// <summary>Projection (in-memory) + an already-bound request.</summary>
+    public static InanduGridResult<TResult> ToInanduGrid<TSource, TResult>(
+        this IEnumerable<TSource> source, Expression<Func<TSource, TResult>> selector, InanduGridRequest request, Action<InanduGridOptions>? configure = null)
+        => source.ToInanduGrid(selector, InanduGridOptions.For(request, configure));
+
+    /// <summary>Projection (in-memory) + a request bound from a query string.</summary>
+    public static InanduGridResult<TResult> ToInanduGrid<TSource, TResult>(
+        this IEnumerable<TSource> source, Expression<Func<TSource, TResult>> selector, string? queryString, Action<InanduGridOptions>? configure = null)
+        => source.ToInanduGrid(selector, InanduGridOptions.FromQueryString(queryString, configure));
+
     // ── ApplyInanduGridQuery — compose, don't execute ────────────────────
 
     /// <summary>
