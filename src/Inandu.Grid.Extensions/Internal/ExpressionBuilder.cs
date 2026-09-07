@@ -45,13 +45,23 @@ internal static class ExpressionBuilder
                 continue;
             }
 
+            if (!options.IsSortAllowed(sort.Field))
+            {
+                if (options.ThrowOnUnknownField)
+                {
+                    throw InanduGridRequestException.Single("sort", $"Sorting by '{sort.Field}' is not allowed.");
+                }
+
+                continue;
+            }
+
             var param = Expression.Parameter(typeof(T), "x");
             var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(sort.Field));
             if (resolved is null)
             {
                 if (options.ThrowOnUnknownField)
                 {
-                    throw new ArgumentException($"Unknown sort field '{sort.Field}' on {typeof(T).Name}.", nameof(sorts));
+                    throw InanduGridRequestException.Single("sort", $"Unknown sort field '{sort.Field}' on {typeof(T).Name}.");
                 }
 
                 continue;
@@ -201,12 +211,23 @@ internal static class ExpressionBuilder
         }
 
         var condition = (AdvancedFilterCondition)node;
+
+        if (options.FindColumn(condition.Field) is { CanFilter: false })
+        {
+            if (options.ThrowOnUnknownField)
+            {
+                throw InanduGridRequestException.Single($"filter.{condition.Field}", $"Filtering '{condition.Field}' is not allowed.");
+            }
+
+            return null;
+        }
+
         var resolved = PropertyResolver.Resolve(param, rootType, options.MapField(condition.Field));
         if (resolved is null)
         {
             if (options.ThrowOnUnknownField)
             {
-                throw new ArgumentException($"Unknown filter field '{condition.Field}' on {rootType.Name}.", nameof(node));
+                throw InanduGridRequestException.Single($"filter.{condition.Field}", $"Unknown filter field '{condition.Field}' on {rootType.Name}.");
             }
 
             return null;
@@ -254,16 +275,125 @@ internal static class ExpressionBuilder
         }
     }
 
+    // ── keyset (seek) predicate ──────────────────────────────────────────
+
+    /// <summary>
+    /// The predicate that selects rows strictly <b>after</b> the row whose sort-key values are
+    /// <paramref name="values"/>, given <paramref name="sorts"/>:
+    /// <c>OR_i ( AND_{j&lt;i} fj == vj  AND  fi &gt;/&lt; vi )</c>. Returns <c>null</c> when a key can't be
+    /// built (null value, or a non-orderable key type) — the caller should fall back to offset paging.
+    /// </summary>
+    public static Expression<Func<T, bool>>? BuildSeekPredicate<T>(
+        IReadOnlyList<InanduGridSort> sorts, IReadOnlyList<object?> values, InanduGridOptions options)
+    {
+        if (sorts.Count == 0 || values.Count != sorts.Count)
+        {
+            return null;
+        }
+
+        var param = Expression.Parameter(typeof(T), "x");
+        var ignoreCase = IsIgnoreCase(options.StringComparison);
+
+        var members = new Expression[sorts.Count];
+        var memberTypes = new Type[sorts.Count];
+        var coerced = new object?[sorts.Count];
+
+        for (var i = 0; i < sorts.Count; i++)
+        {
+            var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(sorts[i].Field));
+            if (resolved is null)
+            {
+                return null;
+            }
+
+            var (access, type) = resolved.Value;
+            var underlying = Nullable.GetUnderlyingType(type) ?? type;
+            if (underlying == typeof(bool) || underlying == typeof(Guid))
+            {
+                return null;
+            }
+
+            if (values[i] is null || !ValueCoercion.TryCoerce(values[i], type, options.Culture, out var value) || value is null)
+            {
+                return null;
+            }
+
+            members[i] = access;
+            memberTypes[i] = type;
+            coerced[i] = value;
+        }
+
+        Expression? predicate = null;
+
+        for (var i = 0; i < sorts.Count; i++)
+        {
+            var underlying = Nullable.GetUnderlyingType(memberTypes[i]) ?? memberTypes[i];
+            var op = sorts[i].IsDescending ? FilterOperator.LessThan : FilterOperator.GreaterThan;
+            var strict = BuildComparison(members[i], memberTypes[i], underlying, coerced[i], op, ignoreCase);
+            if (strict is null)
+            {
+                return null;
+            }
+
+            Expression clause = strict;
+            for (var j = 0; j < i; j++)
+            {
+                var uj = Nullable.GetUnderlyingType(memberTypes[j]) ?? memberTypes[j];
+                clause = Expression.AndAlso(BuildEquals(members[j], memberTypes[j], uj, coerced[j], ignoreCase), clause);
+            }
+
+            predicate = predicate is null ? clause : Expression.OrElse(predicate, clause);
+        }
+
+        return predicate is null ? null : Expression.Lambda<Func<T, bool>>(predicate, param);
+    }
+
+    /// <summary>Compiles a <c>Func&lt;T, object?[]&gt;</c> that reads the sort-key values from a row (for building the next cursor).</summary>
+    public static Func<T, object?[]>? BuildKeyReader<T>(IReadOnlyList<InanduGridSort> sorts, InanduGridOptions options)
+    {
+        if (sorts.Count == 0)
+        {
+            return null;
+        }
+
+        var param = Expression.Parameter(typeof(T), "x");
+        var items = new Expression[sorts.Count];
+
+        for (var i = 0; i < sorts.Count; i++)
+        {
+            var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(sorts[i].Field));
+            if (resolved is null)
+            {
+                return null;
+            }
+
+            items[i] = Expression.Convert(resolved.Value.Access, typeof(object));
+        }
+
+        var array = Expression.NewArrayInit(typeof(object), items);
+        return Expression.Lambda<Func<T, object?[]>>(array, param).Compile();
+    }
+
     // ── shared building blocks ───────────────────────────────────────────
 
     private static Expression? BuildCondition(ParameterExpression param, Type rootType, FilterCondition condition, InanduGridOptions options)
     {
+        if (!options.IsFilterAllowed(condition.Field, condition.Operator))
+        {
+            if (options.ThrowOnUnknownField)
+            {
+                throw InanduGridRequestException.Single($"filter.{condition.Field}", $"Filtering '{condition.Field}' with '{condition.Operator.ToToken()}' is not allowed.");
+            }
+
+            return null;
+        }
+
         var resolved = PropertyResolver.Resolve(param, rootType, options.MapField(condition.Field));
         if (resolved is null)
         {
             if (options.ThrowOnUnknownField)
             {
-                throw new ArgumentException($"Unknown filter field '{condition.Field}' on {rootType.Name}.", nameof(condition));
+                throw InanduGridRequestException.Single($"filter.{condition.Field}", $"Unknown filter field '{condition.Field}' on {rootType.Name}.");
             }
 
             return null;
@@ -374,8 +504,8 @@ internal static class ExpressionBuilder
             return null;
         }
 
-        var fields = options.SearchableFields ?? DefaultSearchableFields(rootType);
-        if (fields.Count == 0)
+        var fields = options.EffectiveSearchableFields(() => DefaultSearchableFields(rootType));
+        if (fields is null || fields.Count == 0)
         {
             return null;
         }
@@ -460,8 +590,8 @@ internal static class ExpressionBuilder
 
     private static Expression? BuildComparison(Expression member, Type memberType, Type underlying, object? value, FilterOperator op, bool ignoreCase)
     {
-        // Ordered comparison of enum / bool / Guid isn't emitted (ambiguous); use eq / in / numeric fields.
-        if (underlying.IsEnum || underlying == typeof(bool) || underlying == typeof(Guid))
+        // Ordered comparison of bool / Guid isn't meaningful; use eq / in there.
+        if (underlying == typeof(bool) || underlying == typeof(Guid))
         {
             return null;
         }
@@ -475,6 +605,14 @@ internal static class ExpressionBuilder
             var r = Expression.Constant(ignoreCase ? ((string?)value ?? string.Empty).ToLower() : (string?)value ?? string.Empty);
             left = Expression.Call(StringCompare, l, r);
             right = Expression.Constant(0);
+        }
+        else if (underlying.IsEnum)
+        {
+            // enums are ordered by their underlying integral value
+            var intType = Enum.GetUnderlyingType(underlying);
+            var target = memberType == underlying ? intType : typeof(Nullable<>).MakeGenericType(intType);
+            left = Expression.Convert(member, target);
+            right = Expression.Convert(TypedConstant(value, memberType, underlying), target);
         }
         else
         {
@@ -505,7 +643,7 @@ internal static class ExpressionBuilder
             ? Expression.Coalesce(member, Expression.Constant(string.Empty))
             : member;
 
-    private static IList<string> DefaultSearchableFields(Type rootType)
+    private static List<string> DefaultSearchableFields(Type rootType)
         => rootType
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.PropertyType == typeof(string) && p.GetIndexParameters().Length == 0)

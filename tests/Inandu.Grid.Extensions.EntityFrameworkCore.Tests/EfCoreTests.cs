@@ -177,4 +177,44 @@ public class EfCoreTests : IClassFixture<ShopFixture>
         var counts = res.Groups!.Select(g => g.Count).ToList();
         Assert.Equal(counts.OrderByDescending(c => c).ToList(), counts);
     }
+
+    [Fact]
+    public async Task ToInanduGridAsync_computes_aggregations_over_the_filter()
+    {
+        await using var db = _fx.NewContext();
+
+        // NB: SQLite can't SUM/AVG/MAX/MIN decimal, so aggregate int / date columns here.
+        var result = await db.Widgets.AsNoTracking()
+            .ToInanduGridAsync("?pageSize=2&status_eq=Active&aggregate=sum:stock,count:*,max:stock,min:createdOn");
+
+        var active = db.Widgets.Where(w => w.Status == ShopStatus.Active);
+        Assert.Equal(await active.SumAsync(w => w.Stock), (int?)result.Aggregations!["sum:stock"]);
+        Assert.Equal(await active.CountAsync(), result.Aggregations["count:*"]);
+        Assert.Equal(await active.MaxAsync(w => w.Stock), (int?)result.Aggregations["max:stock"]);
+        Assert.IsType<DateTime>(result.Aggregations["min:createdOn"]);
+    }
+
+    [Fact]
+    public async Task ToInanduGridAsync_keyset_pages_forward_without_overlap()
+    {
+        await using var db = _fx.NewContext();
+
+        var page1 = await db.Widgets.AsNoTracking().ToInanduGridAsync("?pageSize=20&sort=id", o => o.EnableKeyset = true);
+        var page2 = await db.Widgets.AsNoTracking().ToInanduGridAsync($"?pageSize=20&sort=id&after={page1.NextCursor}");
+
+        Assert.Equal(Enumerable.Range(1, 20), page1.Data.Select(w => w.Id));
+        Assert.Equal(Enumerable.Range(21, 20), page2.Data.Select(w => w.Id));
+        Assert.True(page1.HasMore);
+    }
+
+    [Fact]
+    public async Task ToInanduGridDistinctAsync_values_and_counts()
+    {
+        await using var db = _fx.NewContext();
+
+        var result = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("category", "?pageSize=50");
+
+        Assert.Equal(6, result.Total);
+        Assert.Equal(240, result.Values.Sum(v => v.Count));
+    }
 }

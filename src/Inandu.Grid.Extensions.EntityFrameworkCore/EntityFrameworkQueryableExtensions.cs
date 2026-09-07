@@ -18,14 +18,38 @@ public static class InanduGridEntityFrameworkExtensions
 {
     // ── rows ─────────────────────────────────────────────────────────────
 
-    /// <summary>Applies the request to <paramref name="source"/> and returns one page, asynchronously.</summary>
+    /// <summary>
+    /// Applies the request to <paramref name="source"/> and returns one page, asynchronously —
+    /// including keyset paging (<c>after</c>) and the cost guard. Aggregate totals (<c>aggregate=</c>)
+    /// are computed with a small set of blocking scalar queries.
+    /// </summary>
     public static async Task<InanduGridResult<T>> ToInanduGridAsync<T>(
         this IQueryable<T> source, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var query = source.ApplyInanduGridQuery(options);
-        var total = await query.FilteredQuery.CountAsync(cancellationToken).ConfigureAwait(false);
-        var page = await query.PagedQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
-        return new InanduGridResult<T>(page, total, query.Page, query.PageSize);
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        options ??= new InanduGridOptions();
+        var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
+
+        var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
+        var sorted = ExpressionBuilder.ApplySort(filtered, request.Sort, options);
+
+        var total = options.IncludeTotal ? await filtered.CountAsync(cancellationToken).ConfigureAwait(false) : -1;
+
+        var plan = Paginator.Plan(sorted, request, options);
+        var fetched = await plan.Query.ToListAsync(cancellationToken).ConfigureAwait(false);
+        var (rows, hasMore, nextCursor) = Paginator.Finish(fetched, plan, options);
+
+        return new InanduGridResult<T>(rows, total, plan.Page, plan.PageSize)
+        {
+            HasMore = hasMore,
+            NextCursor = nextCursor,
+            Aggregations = InanduGridQueryableExtensions.ComputeAggregations(filtered, request, options),
+        };
     }
 
     /// <summary>Async + an already-bound request.</summary>
@@ -50,10 +74,27 @@ public static class InanduGridEntityFrameworkExtensions
         InanduGridOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var query = source.ApplyInanduGridQuery(selector, options);
-        var total = await query.FilteredQuery.CountAsync(cancellationToken).ConfigureAwait(false);
-        var page = await query.PagedQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
-        return new InanduGridResult<TResult>(page, total, query.Page, query.PageSize);
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        options ??= new InanduGridOptions();
+        var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
+
+        var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
+        var sortedProjected = ExpressionBuilder.ApplySort(filtered, request.Sort, options).Select(selector);
+        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+
+        var total = options.IncludeTotal ? await filtered.CountAsync(cancellationToken).ConfigureAwait(false) : -1;
+        var rows = await InanduGridQueryableExtensions.Paginate(sortedProjected, page, pageSize)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return new InanduGridResult<TResult>(rows, total, page, pageSize)
+        {
+            Aggregations = InanduGridQueryableExtensions.ComputeAggregations(filtered, request, options),
+        };
     }
 
     /// <summary>Async projection + an already-bound request.</summary>
@@ -82,6 +123,7 @@ public static class InanduGridEntityFrameworkExtensions
 
         options ??= new InanduGridOptions();
         var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
         var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
@@ -146,7 +188,48 @@ public static class InanduGridEntityFrameworkExtensions
         this IQueryable<T> source, string? queryString, Action<InanduGridOptions>? configure = null, CancellationToken cancellationToken = default)
         => source.ToInanduGridGroupedAsync(InanduGridOptions.FromQueryString(queryString, configure), cancellationToken);
 
-    private static Task<(List<InanduGridGroup> Groups, int Total)> GroupLevelAsync<T>(
+    // ── distinct values ─────────────────────────────────────────────────
+
+    /// <summary>A column's distinct values + row counts, asynchronously — see <c>ToInanduGridDistinct</c>.</summary>
+    public static async Task<InanduGridDistinctResult> ToInanduGridDistinctAsync<T>(
+        this IQueryable<T> source, string field, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        if (string.IsNullOrWhiteSpace(field))
+        {
+            throw new ArgumentException("Field must not be blank.", nameof(field));
+        }
+
+        options ??= new InanduGridOptions();
+        var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
+
+        var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
+        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var order = request.Sort.Count > 0 ? request.Sort[0] : null;
+
+        var (groups, total) = await GroupLevelAsync(filtered, field, options, page, pageSize, order, cancellationToken).ConfigureAwait(false);
+
+        return new InanduGridDistinctResult
+        {
+            Field = field,
+            Values = groups.ConvertAll(g => new InanduGridDistinctValue { Value = g.Key, Count = g.Count }),
+            Total = total,
+            Page = page,
+            PageSize = pageSize,
+        };
+    }
+
+    /// <summary>Async distinct + a request bound from a query string.</summary>
+    public static Task<InanduGridDistinctResult> ToInanduGridDistinctAsync<T>(
+        this IQueryable<T> source, string field, string? queryString, Action<InanduGridOptions>? configure = null, CancellationToken cancellationToken = default)
+        => source.ToInanduGridDistinctAsync(field, InanduGridOptions.FromQueryString(queryString, configure), cancellationToken);
+
+    internal static Task<(List<InanduGridGroup> Groups, int Total)> GroupLevelAsync<T>(
         IQueryable<T> source, string field, InanduGridOptions options, int page, int pageSize, InanduGridSort? groupSort, CancellationToken ct)
     {
         var param = Expression.Parameter(typeof(T), "x");

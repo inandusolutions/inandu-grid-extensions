@@ -74,7 +74,7 @@ public class SortingTests
         var request = new InanduGridRequest();
         request.Sort.Add(new InanduGridSort("nope"));
 
-        Assert.Throws<System.ArgumentException>(() =>
+        Assert.Throws<InanduGridRequestException>(() =>
             Sample.Products().ToInanduGrid(InanduGridOptions.For(request, o => o.ThrowOnUnknownField = true)));
     }
 

@@ -24,6 +24,7 @@ public sealed class InanduGridRequest
         "q", "query", "search", "term",
         "filter", "advancedfilter",
         "groupby", "groupkeys",
+        "aggregate", "aggregates", "after", "cursor",
         "_", "t", "_t",
     };
 
@@ -101,6 +102,21 @@ public sealed class InanduGridRequest
     /// against the corresponding <see cref="GroupBy"/> field.
     /// </summary>
     public IList<string> GroupKeys { get; set; } = new List<string>();
+
+    /// <summary>
+    /// Totals to compute over the filtered set — the <c>aggregate</c> param
+    /// (<c>aggregate=sum:amount,avg:rating,count:*</c>). Results land in
+    /// <see cref="InanduGridResult{T}.Aggregations"/>.
+    /// </summary>
+    [JsonPropertyName("aggregate")]
+    public IList<InanduGridAggregate> Aggregations { get; set; } = new List<InanduGridAggregate>();
+
+    /// <summary>
+    /// Opaque keyset cursor — the <c>after</c> param. When set (and <see cref="Sort"/> is non-empty),
+    /// the page is fetched by seeking past this row instead of <c>Skip</c>. Take it from a prior
+    /// result's <see cref="InanduGridResult{T}.NextCursor"/>.
+    /// </summary>
+    public string? After { get; set; }
 
     /// <summary>
     /// Every filter, flattened: <see cref="ColumnFilters"/> expanded via
@@ -231,6 +247,24 @@ public sealed class InanduGridRequest
                 foreach (var gk in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     request.GroupKeys.Add(gk.Trim());
+                }
+            }
+            else if (KeyIs(key, "aggregate") || KeyIs(key, "aggregates"))
+            {
+                foreach (var token in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var agg = InanduGridAggregate.Parse(token);
+                    if (agg is not null)
+                    {
+                        request.Aggregations.Add(agg);
+                    }
+                }
+            }
+            else if (KeyIs(key, "after") || KeyIs(key, "cursor"))
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    request.After = value;
                 }
             }
             else if (!ReservedKeys.Contains(key))

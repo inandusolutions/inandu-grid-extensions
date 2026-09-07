@@ -8,20 +8,15 @@ namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// <c>ToInanduGrid()</c> — apply an <c>&lt;inandu-grid serverSide&gt;</c> request (multi-column sort,
-/// free-text search, per-column filters and paging) to a sequence and get back just the current
-/// page plus the total match count, ready to serialize as the grid's <c>[data]</c> / <c>[totalItems]</c>.
+/// free-text search, per-column filters, an advanced-filter tree, paging or a keyset cursor, and
+/// optional aggregate totals) to a sequence and get back just the current page plus the total match
+/// count, ready to serialize as the grid's <c>[data]</c> / <c>[totalItems]</c>.
 /// </summary>
 public static class InanduGridQueryableExtensions
 {
     // ── ToInanduGrid ───────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Applies <paramref name="options"/> (<see cref="InanduGridOptions.Request"/> + configuration) to
-    /// an in-memory sequence and returns one page.
-    /// </summary>
-    /// <typeparam name="T">The row type.</typeparam>
-    /// <param name="source">The full sequence.</param>
-    /// <param name="options">The request and configuration. When <c>null</c>, an empty request (page 1, default size) is used.</param>
+    /// <summary>Applies <paramref name="options"/> to an in-memory sequence and returns one page.</summary>
     public static InanduGridResult<T> ToInanduGrid<T>(this IEnumerable<T> source, InanduGridOptions? options = null)
     {
         if (source is null)
@@ -34,23 +29,41 @@ public static class InanduGridQueryableExtensions
 
     /// <summary>
     /// Applies <paramref name="options"/> to an <see cref="IQueryable{T}"/> (EF Core, etc.) and
-    /// returns one page. Executes synchronously with <c>Count()</c> + <c>ToList()</c>; for
-    /// <c>async</c> use <c>Inandu.Grid.Extensions.EntityFrameworkCore</c>'s <c>ToInanduGridAsync</c>
-    /// or <see cref="ApplyInanduGridQuery{T}(IQueryable{T}, InanduGridOptions?)"/>.
+    /// returns one page. Executes synchronously; for <c>async</c> use
+    /// <c>Inandu.Grid.Extensions.EntityFrameworkCore</c>'s <c>ToInanduGridAsync</c>.
     /// </summary>
     public static InanduGridResult<T> ToInanduGrid<T>(this IQueryable<T> source, InanduGridOptions? options = null)
     {
-        var query = ApplyInanduGridQuery(source, options);
-        var total = query.FilteredQuery.Count();
-        var page = query.PagedQuery.ToList();
-        return new InanduGridResult<T>(page, total, query.Page, query.PageSize);
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        options ??= new InanduGridOptions();
+        var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
+
+        var filtered = ApplyFilters(source, options);
+        var sorted = ExpressionBuilder.ApplySort(filtered, request.Sort, options);
+
+        var total = options.IncludeTotal ? filtered.Count() : -1;
+
+        var plan = Paginator.Plan(sorted, request, options);
+        var (rows, hasMore, nextCursor) = Paginator.Finish(plan.Query.ToList(), plan, options);
+
+        return new InanduGridResult<T>(rows, total, plan.Page, plan.PageSize)
+        {
+            HasMore = hasMore,
+            NextCursor = nextCursor,
+            Aggregations = ComputeAggregations(filtered, request, options),
+        };
     }
 
     /// <summary>Convenience overload: apply an already-bound <paramref name="request"/> with optional extra configuration.</summary>
     public static InanduGridResult<T> ToInanduGrid<T>(this IEnumerable<T> source, InanduGridRequest request, Action<InanduGridOptions>? configure = null)
         => source.ToInanduGrid(InanduGridOptions.For(request, configure));
 
-    /// <summary>Convenience overload: apply an already-bound <paramref name="request"/> with optional extra configuration.</summary>
+    /// <inheritdoc cref="ToInanduGrid{T}(IEnumerable{T}, InanduGridRequest, Action{InanduGridOptions}?)"/>
     public static InanduGridResult<T> ToInanduGrid<T>(this IQueryable<T> source, InanduGridRequest request, Action<InanduGridOptions>? configure = null)
         => source.ToInanduGrid(InanduGridOptions.For(request, configure));
 
@@ -58,17 +71,17 @@ public static class InanduGridQueryableExtensions
     public static InanduGridResult<T> ToInanduGrid<T>(this IEnumerable<T> source, string? queryString, Action<InanduGridOptions>? configure = null)
         => source.ToInanduGrid(InanduGridOptions.FromQueryString(queryString, configure));
 
-    /// <summary>Convenience overload: bind the request from a raw query string.</summary>
+    /// <inheritdoc cref="ToInanduGrid{T}(IEnumerable{T}, string?, Action{InanduGridOptions}?)"/>
     public static InanduGridResult<T> ToInanduGrid<T>(this IQueryable<T> source, string? queryString, Action<InanduGridOptions>? configure = null)
         => source.ToInanduGrid(InanduGridOptions.FromQueryString(queryString, configure));
 
-    // ── ToInanduGrid with projection — filter/sort on the entity, return a DTO ──
+    // ── ToInanduGrid with projection ─────────────────────────────────────
 
     /// <summary>
     /// Applies the request to <paramref name="source"/>, then projects the page with
-    /// <paramref name="selector"/>. Sorting and filtering still resolve against
-    /// <typeparamref name="TSource"/> (the entity), so the DTO never has to carry the filterable
-    /// columns. Over EF Core the projection is part of the SQL, so only the DTO's columns are read.
+    /// <paramref name="selector"/>. Sorting and filtering resolve against <typeparamref name="TSource"/>
+    /// (the entity). With offset paging the projection is part of the SQL; with keyset paging the
+    /// entity page is materialised first, then projected in memory (the sort keys must survive).
     /// </summary>
     public static InanduGridResult<TResult> ToInanduGrid<TSource, TResult>(
         this IEnumerable<TSource> source,
@@ -89,10 +102,54 @@ public static class InanduGridQueryableExtensions
         Expression<Func<TSource, TResult>> selector,
         InanduGridOptions? options = null)
     {
-        var query = ApplyInanduGridQuery(source, selector, options);
-        var total = query.FilteredQuery.Count();
-        var page = query.PagedQuery.ToList();
-        return new InanduGridResult<TResult>(page, total, query.Page, query.PageSize);
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        if (selector is null)
+        {
+            throw new ArgumentNullException(nameof(selector));
+        }
+
+        options ??= new InanduGridOptions();
+        var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
+
+        var filtered = ApplyFilters(source, options);
+        var sorted = ExpressionBuilder.ApplySort(filtered, request.Sort, options);
+        var total = options.IncludeTotal ? filtered.Count() : -1;
+        var aggregations = ComputeAggregations(filtered, request, options);
+
+        var plan = Paginator.Plan(sorted, request, options);
+
+        List<TResult> rows;
+        bool? hasMore;
+        string? nextCursor;
+
+        if (plan.Keyset)
+        {
+            // materialise the entity page (sort keys intact), then project in memory
+            var entityRows = plan.Query.ToList();
+            var finished = Paginator.Finish(entityRows, plan, options);
+            var compiled = selector.Compile();
+            rows = finished.Rows.Select(compiled).ToList();
+            hasMore = finished.HasMore;
+            nextCursor = finished.NextCursor;
+        }
+        else
+        {
+            rows = plan.Query.Select(selector).ToList();
+            hasMore = null;
+            nextCursor = null;
+        }
+
+        return new InanduGridResult<TResult>(rows, total, plan.Page, plan.PageSize)
+        {
+            HasMore = hasMore,
+            NextCursor = nextCursor,
+            Aggregations = aggregations,
+        };
     }
 
     /// <summary>Projection + an already-bound request.</summary>
@@ -115,12 +172,13 @@ public static class InanduGridQueryableExtensions
         this IEnumerable<TSource> source, Expression<Func<TSource, TResult>> selector, string? queryString, Action<InanduGridOptions>? configure = null)
         => source.ToInanduGrid(selector, InanduGridOptions.FromQueryString(queryString, configure));
 
-    // ── ApplyInanduGridQuery — compose, don't execute ────────────────────
+    // ── ApplyInanduGridQuery — compose, don't execute (offset paging only) ─
 
     /// <summary>
-    /// Composes sorting + filtering + paging onto <paramref name="source"/> <b>without executing</b>.
-    /// Returns the <see cref="InanduGridQuery{T}"/> holding <c>FilteredQuery</c> (for your own
-    /// <c>CountAsync</c>) and <c>PagedQuery</c> (for your own <c>ToListAsync</c>).
+    /// Composes sorting + filtering + <b>offset</b> paging onto <paramref name="source"/> without
+    /// executing. Returns <c>FilteredQuery</c> (for your own <c>CountAsync</c>) and <c>PagedQuery</c>
+    /// (for your own <c>ToListAsync</c>). Keyset paging / aggregations are not applied here — use
+    /// <see cref="ToInanduGrid{T}(IQueryable{T}, InanduGridOptions?)"/> or the EF Core package.
     /// </summary>
     public static InanduGridQuery<T> ApplyInanduGridQuery<T>(this IQueryable<T> source, InanduGridOptions? options = null)
     {
@@ -130,18 +188,16 @@ public static class InanduGridQueryableExtensions
         }
 
         options ??= new InanduGridOptions();
+        var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
+
         var filtered = ApplyFilterAndSort(source, options);
-        var (page, pageSize) = (options.Request ?? new InanduGridRequest())
-            .ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         return new InanduGridQuery<T>(filtered, Paginate(filtered, page, pageSize), page, pageSize);
     }
 
-    /// <summary>
-    /// Composes filtering + sorting on <typeparamref name="TSource"/>, then <c>Select</c>s with
-    /// <paramref name="selector"/>, then pages — without executing. <c>FilteredQuery</c> and
-    /// <c>PagedQuery</c> are the projected <see cref="IQueryable{T}"/> of <typeparamref name="TResult"/>.
-    /// </summary>
+    /// <summary>Projected variant of <see cref="ApplyInanduGridQuery{T}(IQueryable{T}, InanduGridOptions?)"/>.</summary>
     public static InanduGridQuery<TResult> ApplyInanduGridQuery<TSource, TResult>(
         this IQueryable<TSource> source,
         Expression<Func<TSource, TResult>> selector,
@@ -158,9 +214,11 @@ public static class InanduGridQueryableExtensions
         }
 
         options ??= new InanduGridOptions();
+        var request = options.Request ?? new InanduGridRequest();
+        RequestGuard.Enforce(request, options);
+
         var projected = ApplyFilterAndSort(source, options).Select(selector);
-        var (page, pageSize) = (options.Request ?? new InanduGridRequest())
-            .ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         return new InanduGridQuery<TResult>(projected, Paginate(projected, page, pageSize), page, pageSize);
     }
@@ -200,5 +258,16 @@ public static class InanduGridQueryableExtensions
         }
 
         return source.Skip((int)Math.Min(skip, int.MaxValue)).Take(pageSize);
+    }
+
+    internal static IReadOnlyDictionary<string, object?>? ComputeAggregations<T>(IQueryable<T> filtered, InanduGridRequest request, InanduGridOptions options)
+    {
+        if (request.Aggregations.Count == 0)
+        {
+            return null;
+        }
+
+        var plans = AggregateBuilder.Plan<T>(request.Aggregations, options);
+        return plans.Count == 0 ? null : AggregateBuilder.Compute(filtered, plans);
     }
 }
