@@ -147,6 +147,50 @@ var result = db.Sales.ToInanduGridGrouped(InanduGridOptions.FromQueryString(qs))
 return result.IsLeaf ? Results.Ok(result.Rows) : Results.Ok(result.Groups);
 ```
 
+## Aggregate totals
+
+`aggregate=sum:amount,avg:rating,count:*,min:createdOn,max:price` → computed over the **filtered**
+set (not the page) into `InanduGridResult<T>.Aggregations` (`{ "sum:amount": 91234.5, … }`) — for
+the grid's totals row.
+
+## Keyset (cursor) pagination
+
+For deep pages, `after=<cursor>` seeks past the last row instead of `Skip`-ing over everything:
+
+```csharp
+var page = db.Orders.ToInanduGrid("?pageSize=50&sort=-createdOn,id", o => o.EnableKeyset = true);
+// page.NextCursor -> next request adds &after=<NextCursor>;  o.IncludeTotal = false skips the COUNT
+```
+
+The sort columns are the cursor — include a unique tie-breaker (`,id`). A missing / stale cursor
+falls back to offset paging. See **[docs/keyset-pagination.md](docs/keyset-pagination.md)**.
+
+## Per-column configuration
+
+```csharp
+o.Column("customer").Path("Customer.Name").Searchable();
+o.Column("price").Filterable(FilterOperator.GreaterThanOrEqual, FilterOperator.LessThanOrEqual);
+o.Column("internalNote").NotFilterable().Sortable(false);
+```
+
+A disallowed operator / sort / filter is dropped — or, with `o.ThrowOnUnknownField = true`, throws
+`InanduGridRequestException` (its `Errors` map is `ValidationProblemDetails`-shaped). See
+**[docs/column-config.md](docs/column-config.md)**.
+
+## Query cost guard
+
+`o.Limits` caps how large a request can be (conditions, sort columns, advanced-filter depth /
+nodes, `in`-list length, group levels, aggregations). `o.OnLimitExceeded` is `Trim` (default) or
+`Reject` (throw). Defaults are generous; tighten for a public endpoint.
+
+## Minimal-API one-liners (`Inandu.Grid.Extensions.AspNetCore`)
+
+```csharp
+app.MapInanduGrid("/api/products", products);
+app.MapInanduGridGrouped("/api/products/groups", ctx => ctx.RequestServices.GetRequiredService<AppDb>().Products);
+app.MapInanduGridDistinct("/api/products/distinct/{field}", products);
+```
+
 ## The Angular side
 
 Wire the grid's `serverSide` outputs to a request and bind the response:
@@ -176,6 +220,8 @@ See **[docs/request-contract.md](docs/request-contract.md)** for the full parame
 | `{field}_{op}` | A filter, `op` ∈ `eq neq contains startsWith endsWith gt gte lt lte in`. |
 | `filter` | JSON advanced-filter tree (nested AND / OR). |
 | `groupBy`, `groupKeys` | Server-side grouping + drill-down (`ToInanduGridGrouped`). |
+| `aggregate` | `sum:f,avg:f,count:*,min:f,max:f` totals over the filtered set. |
+| `after` | Keyset cursor — seek past this row instead of `Skip`. |
 
 ## Configuration
 

@@ -10,7 +10,7 @@
     <IsPackable>true</IsPackable>
     <PackageId>Inandu.Grid.Extensions.EntityFrameworkCore</PackageId>
     <Title>Inandu.Grid.Extensions.EntityFrameworkCore</Title>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Description>Async EF Core companion for Inandu.Grid.Extensions — ToInanduGridAsync() runs the inandu-grid serverSide request as SQL with CountAsync + ToListAsync. Targets .NET 8 and .NET 10.</Description>
     <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
     <PackageTags>inandu-grid;angular;data-grid;server-side;paging;efcore;entity-framework;async</PackageTags>

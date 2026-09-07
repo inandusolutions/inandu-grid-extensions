@@ -10,7 +10,7 @@
     <IsPackable>true</IsPackable>
     <PackageId>Inandu.Grid.Extensions.AspNetCore</PackageId>
     <Title>Inandu.Grid.Extensions.AspNetCore</Title>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Description>ASP.NET Core binding for Inandu.Grid.Extensions — [FromInanduGrid] model binder and a minimal-API helper that bind an inandu-grid serverSide request straight from the HTTP request. Targets .NET 8 and .NET 10.</Description>
     <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
     <PackageTags>inandu-grid;angular;data-grid;server-side;aspnetcore;model-binder;minimal-api</PackageTags>

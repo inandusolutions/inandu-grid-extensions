@@ -48,6 +48,18 @@ A leading `+` is allowed and ignored. Aliases: `orderby`, `order`.
 
 See [grouping.md](grouping.md).
 
+## Aggregate totals
+
+| Param | Meaning |
+|---|---|
+| `aggregate` | Comma-separated `function:field` — `sum` / `avg` / `min` / `max` / `count` (and `count:*` for all rows). Computed over the filtered set; lands in `InanduGridResult.Aggregations` keyed `"sum:amount"`. Alias: `aggregates`. |
+
+## Keyset paging
+
+| Param | Meaning |
+|---|---|
+| `after` | Opaque cursor (base64 of the last row's sort-key values). With a non-empty `sort`, the page is fetched by seeking past that row instead of `Skip`. Take it from a prior result's `nextCursor`. Alias: `cursor`. See [keyset-pagination.md](keyset-pagination.md). |
+
 ## Column filters
 
 Flat form — one param per condition, key is `{field}_{operator}`:

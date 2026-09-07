@@ -6,6 +6,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-07
+
+### Added
+
+- **Aggregate totals** — `aggregate=sum:amount,avg:rating,count:*,min:d,max:p` computed over the
+  filtered set, in `InanduGridResult<T>.Aggregations` (keyed `"sum:amount"`).
+- **Keyset (cursor) pagination** — `after=<cursor>` seeks past the last row instead of `Skip`;
+  `InanduGridResult<T>.NextCursor` / `HasMore`. `InanduGridOptions.EnableKeyset` emits a cursor on
+  every sorted result; `IncludeTotal = false` skips the `Count`. Enums are now orderable, so they
+  work as sort keys.
+- **Distinct values** — `ToInanduGridDistinct(field)` → `{ value, count }[]` for a set-filter
+  checklist, honouring the request's other filters. `ToInanduGridDistinctAsync` in the EF package.
+- **Per-column config** — `options.Column("price").Path(…).Filterable(…) / .NotFilterable() /
+  .Sortable(false) / .Searchable(true) / .Label(…)`. A disallowed operator / sort / filter is
+  skipped, or throws in strict mode.
+- **Query cost guard** — `InanduGridLimits` (max conditions, sort columns, advanced-filter
+  nodes / depth, `in`-list length, group levels, aggregations) with
+  `OnLimitExceeded = Trim` (default) / `Reject`. `InanduGridRequestException` carries a
+  per-location `Errors` map (shaped for `ValidationProblemDetails`).
+- **`MapInanduGrid` / `MapInanduGridGrouped` / `MapInanduGridDistinct`** minimal-API helpers in the
+  ASP.NET Core package.
+
+### Changed
+
+- `ThrowOnUnknownField` (and the new guard's `Reject` mode) now throw `InanduGridRequestException`
+  instead of `ArgumentException`.
+
 ## [0.2.0] - 2026-09-07
 
 ### Added
@@ -65,5 +92,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
 [Unreleased]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions
+[0.3.0]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions
 [0.2.0]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions
 [0.1.0]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions

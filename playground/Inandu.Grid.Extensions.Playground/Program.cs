@@ -69,6 +69,19 @@ app.MapPost("/api/products/query", async (HttpRequest request) =>
     })
     .WithName("QueryProducts");
 
+// One-liner endpoints from the AspNetCore package.
+// keyset:      /api/catalog?pageSize=25&sort=-price,id&after=<nextCursor>
+// aggregates:  /api/catalog?aggregate=sum:price,avg:price,count:*
+app.MapInanduGrid("/api/catalog", ProductStore.All, o =>
+{
+    Configure(o);
+    o.EnableKeyset = true;
+    o.Limits.MaxInListItems = 100;
+});
+
+// distinct values for a set-filter checklist: /api/products/distinct/category
+app.MapInanduGridDistinct("/api/products/distinct/{field}", ProductStore.All, configure: Configure);
+
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok", rows = ProductStore.All.Count }));
 
 app.Run();
