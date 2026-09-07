@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net8.0;net10.0</TargetFrameworks>
+
+    <RootNamespace>Inandu.Grid.Extensions.AspNetCore</RootNamespace>
+    <AssemblyName>Inandu.Grid.Extensions.AspNetCore</AssemblyName>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>Inandu.Grid.Extensions.AspNetCore</PackageId>
+    <Title>Inandu.Grid.Extensions.AspNetCore</Title>
+    <Version>0.2.0</Version>
+    <Description>ASP.NET Core binding for Inandu.Grid.Extensions — [FromInanduGrid] model binder and a minimal-API helper that bind an inandu-grid serverSide request straight from the HTTP request. Targets .NET 8 and .NET 10.</Description>
+    <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
+    <PackageTags>inandu-grid;angular;data-grid;server-side;aspnetcore;model-binder;minimal-api</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="/" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Inandu.Grid.Extensions/Inandu.Grid.Extensions.csproj" />
+  </ItemGroup>
+
+</Project>

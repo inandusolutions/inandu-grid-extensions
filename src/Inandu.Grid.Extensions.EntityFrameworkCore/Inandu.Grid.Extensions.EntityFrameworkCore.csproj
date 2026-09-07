@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net8.0;net10.0</TargetFrameworks>
+
+    <RootNamespace>Inandu.Grid.Extensions.EntityFrameworkCore</RootNamespace>
+    <AssemblyName>Inandu.Grid.Extensions.EntityFrameworkCore</AssemblyName>
+
+    <IsPackable>true</IsPackable>
+    <PackageId>Inandu.Grid.Extensions.EntityFrameworkCore</PackageId>
+    <Title>Inandu.Grid.Extensions.EntityFrameworkCore</Title>
+    <Version>0.2.0</Version>
+    <Description>Async EF Core companion for Inandu.Grid.Extensions — ToInanduGridAsync() runs the inandu-grid serverSide request as SQL with CountAsync + ToListAsync. Targets .NET 8 and .NET 10.</Description>
+    <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
+    <PackageTags>inandu-grid;angular;data-grid;server-side;paging;efcore;entity-framework;async</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="/" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Minimum; consumers bring their own (newer) EF Core. 8.0.11 clears the transitive
+         Microsoft.Extensions.Caching.Memory advisory (GHSA-qj66-m88j-hmgj). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Inandu.Grid.Extensions/Inandu.Grid.Extensions.csproj" />
+  </ItemGroup>
+
+</Project>

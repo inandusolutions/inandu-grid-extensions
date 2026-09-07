@@ -8,11 +8,23 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{4B0C4D10
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "playground", "playground", "{4B0C4D10-0000-0000-0000-0000000000A3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", "{4B0C4D10-0000-0000-0000-0000000000A4}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions", "src\Inandu.Grid.Extensions\Inandu.Grid.Extensions.csproj", "{1A1B0001-0000-0000-0000-000000000001}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions.Tests", "tests\Inandu.Grid.Extensions.Tests\Inandu.Grid.Extensions.Tests.csproj", "{1A1B0002-0000-0000-0000-000000000002}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions.Playground", "playground\Inandu.Grid.Extensions.Playground\Inandu.Grid.Extensions.Playground.csproj", "{1A1B0003-0000-0000-0000-000000000003}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions.EntityFrameworkCore", "src\Inandu.Grid.Extensions.EntityFrameworkCore\Inandu.Grid.Extensions.EntityFrameworkCore.csproj", "{1A1B0004-0000-0000-0000-000000000004}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions.AspNetCore", "src\Inandu.Grid.Extensions.AspNetCore\Inandu.Grid.Extensions.AspNetCore.csproj", "{1A1B0005-0000-0000-0000-000000000005}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions.EntityFrameworkCore.Tests", "tests\Inandu.Grid.Extensions.EntityFrameworkCore.Tests\Inandu.Grid.Extensions.EntityFrameworkCore.Tests.csproj", "{1A1B0006-0000-0000-0000-000000000006}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions.AspNetCore.Tests", "tests\Inandu.Grid.Extensions.AspNetCore.Tests\Inandu.Grid.Extensions.AspNetCore.Tests.csproj", "{1A1B0007-0000-0000-0000-000000000007}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Inandu.Grid.Extensions.Benchmarks", "benchmarks\Inandu.Grid.Extensions.Benchmarks\Inandu.Grid.Extensions.Benchmarks.csproj", "{1A1B0008-0000-0000-0000-000000000008}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +47,35 @@ Global
 		{1A1B0003-0000-0000-0000-000000000003}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A1B0003-0000-0000-0000-000000000003}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A1B0003-0000-0000-0000-000000000003}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A1B0004-0000-0000-0000-000000000004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A1B0004-0000-0000-0000-000000000004}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A1B0004-0000-0000-0000-000000000004}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A1B0004-0000-0000-0000-000000000004}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A1B0005-0000-0000-0000-000000000005}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A1B0005-0000-0000-0000-000000000005}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A1B0005-0000-0000-0000-000000000005}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A1B0005-0000-0000-0000-000000000005}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A1B0006-0000-0000-0000-000000000006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A1B0006-0000-0000-0000-000000000006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A1B0006-0000-0000-0000-000000000006}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A1B0006-0000-0000-0000-000000000006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A1B0007-0000-0000-0000-000000000007}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A1B0007-0000-0000-0000-000000000007}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A1B0007-0000-0000-0000-000000000007}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A1B0007-0000-0000-0000-000000000007}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A1B0008-0000-0000-0000-000000000008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A1B0008-0000-0000-0000-000000000008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A1B0008-0000-0000-0000-000000000008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A1B0008-0000-0000-0000-000000000008}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1A1B0001-0000-0000-0000-000000000001} = {4B0C4D10-0000-0000-0000-0000000000A1}
+		{1A1B0004-0000-0000-0000-000000000004} = {4B0C4D10-0000-0000-0000-0000000000A1}
+		{1A1B0005-0000-0000-0000-000000000005} = {4B0C4D10-0000-0000-0000-0000000000A1}
 		{1A1B0002-0000-0000-0000-000000000002} = {4B0C4D10-0000-0000-0000-0000000000A2}
+		{1A1B0006-0000-0000-0000-000000000006} = {4B0C4D10-0000-0000-0000-0000000000A2}
+		{1A1B0007-0000-0000-0000-000000000007} = {4B0C4D10-0000-0000-0000-0000000000A2}
 		{1A1B0003-0000-0000-0000-000000000003} = {4B0C4D10-0000-0000-0000-0000000000A3}
+		{1A1B0008-0000-0000-0000-000000000008} = {4B0C4D10-0000-0000-0000-0000000000A4}
 	EndGlobalSection
 EndGlobal
