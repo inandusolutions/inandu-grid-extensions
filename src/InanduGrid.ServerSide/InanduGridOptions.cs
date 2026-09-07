@@ -26,7 +26,7 @@ public sealed class InanduGridOptions
     /// default) searches every public <see cref="string"/> property of the row type. An empty list
     /// disables free-text search.
     /// </summary>
-    public IList<string>? SearchableFields { get; set; }
+    public List<string>? SearchableFields { get; set; }
 
     /// <summary>String comparison for <c>contains</c> / <c>startsWith</c> / <c>endsWith</c> / <c>eq</c>
     /// on strings and for the free-text search. Default <see cref="StringComparison.OrdinalIgnoreCase"/>.

@@ -10,7 +10,7 @@ namespace InanduGrid.ServerSide.Internal;
 /// <summary>
 /// Turns <see cref="InanduGridSort"/> / <see cref="FilterCondition"/> into LINQ expression trees.
 /// Everything here composes over <see cref="IQueryable{T}"/> so the same code path serves both an
-/// in-memory <see cref="IEnumerable{T}"/> (via <see cref="Queryable.AsQueryable(IQueryable)"/>) and
+/// in-memory <see cref="IEnumerable{T}"/> (via <c>Queryable.AsQueryable</c>) and
 /// EF Core (translated to SQL). String operators are emitted as the plain
 /// <c>Contains</c>/<c>StartsWith</c>/<c>==</c> forms EF can translate; case-insensitivity is done by
 /// lowering both operands, which also translates.

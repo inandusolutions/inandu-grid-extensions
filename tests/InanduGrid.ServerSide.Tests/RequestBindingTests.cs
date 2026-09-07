@@ -49,7 +49,7 @@ public class RequestBindingTests
         Assert.Contains(conditions, c => c.Field == "price" && c.Operator == FilterOperator.LessThanOrEqual);
         Assert.Contains(conditions, c => c.Field == "name" && c.Operator == FilterOperator.Contains);
 
-        var inCondition = Assert.Single(conditions.Where(c => c.Operator == FilterOperator.In));
+        var inCondition = Assert.Single(conditions, c => c.Operator == FilterOperator.In);
         Assert.Equal("status", inCondition.Field);
         Assert.Equal(new[] { "Active", "Draft" }, ((IEnumerable<object?>)inCondition.Value!).Select(v => (string)v!));
     }

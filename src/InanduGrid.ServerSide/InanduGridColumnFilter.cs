@@ -34,7 +34,7 @@ public sealed class InanduGridColumnFilter
     /// <see cref="FilterOperator.In"/>; an empty list is treated as "no constraint" (a data source
     /// can't express "match nothing"), matching the grid-pro behaviour.
     /// </summary>
-    public IList<string>? Values { get; set; }
+    public List<string>? Values { get; set; }
 
     /// <summary><c>true</c> when none of the fields carry an active constraint.</summary>
     public bool IsEmpty

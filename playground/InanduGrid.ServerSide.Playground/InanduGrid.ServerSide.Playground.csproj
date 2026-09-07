@@ -18,9 +18,7 @@
     <ProjectReference Include="../../src/InanduGrid.ServerSide/InanduGrid.ServerSide.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- The Angular front end is built separately (playground/web) into wwwroot/bundle.js. -->
-    <Content Include="wwwroot/**/*" CopyToOutputDirectory="PreserveNewest" Condition="Exists('wwwroot')" />
-  </ItemGroup>
+  <!-- The Angular front end is built separately (playground/web) into wwwroot/bundle.js;
+       the Web SDK already serves wwwroot/** as static content. -->
 
 </Project>

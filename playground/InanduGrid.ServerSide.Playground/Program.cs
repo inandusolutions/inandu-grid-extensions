@@ -35,8 +35,7 @@ app.MapGet("/api/products", (HttpRequest request) =>
 
     return Results.Ok(result);
 })
-.WithName("GetProducts")
-.WithOpenApi();
+.WithName("GetProducts");
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok", rows = ProductStore.All.Count }));
 
