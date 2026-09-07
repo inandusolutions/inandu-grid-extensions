@@ -1,7 +1,7 @@
 using System.Linq;
 using Xunit;
 
-namespace InanduGrid.ServerSide.Tests;
+namespace Inandu.Grid.Extensions.Tests;
 
 public class FilteringTests
 {

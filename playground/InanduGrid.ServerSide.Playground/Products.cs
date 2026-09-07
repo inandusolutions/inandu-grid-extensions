@@ -1,4 +1,4 @@
-namespace InanduGrid.ServerSide.Playground;
+namespace Inandu.Grid.Extensions.Playground;
 
 public enum ProductStatus
 {

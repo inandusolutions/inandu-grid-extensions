@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// The value of one column's filter control, mirroring the core grid's

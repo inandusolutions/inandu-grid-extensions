@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// The payload to send back to an <c>&lt;inandu-grid serverSide&gt;</c>: one page of rows plus the

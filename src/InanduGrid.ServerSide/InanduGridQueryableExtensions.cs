@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using InanduGrid.ServerSide.Internal;
+using Inandu.Grid.Extensions.Internal;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// <c>ToInanduGrid()</c> — apply an <c>&lt;inandu-grid serverSide&gt;</c> request (multi-column sort,

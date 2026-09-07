@@ -1,9 +1,9 @@
 using System;
 using System.Globalization;
-using InanduGrid.ServerSide.Internal;
+using Inandu.Grid.Extensions.Internal;
 using Xunit;
 
-namespace InanduGrid.ServerSide.Tests;
+namespace Inandu.Grid.Extensions.Tests;
 
 public class ValueCoercionTests
 {

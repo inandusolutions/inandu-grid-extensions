@@ -2,7 +2,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace InanduGrid.ServerSide.Json;
+namespace Inandu.Grid.Extensions.Json;
 
 /// <summary>
 /// Reads an <see cref="InanduGridSort"/> from either the object shape the grid emits

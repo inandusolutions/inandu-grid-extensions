@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// The server-side request an <c>&lt;inandu-grid serverSide&gt;</c> makes: the multi-column sort,

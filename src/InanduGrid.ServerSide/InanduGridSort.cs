@@ -1,8 +1,8 @@
 using System;
 using System.Text.Json.Serialization;
-using InanduGrid.ServerSide.Json;
+using Inandu.Grid.Extensions.Json;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>Sort order for a single field. Mirrors the core grid's <c>InanduGridSortCriterion.direction</c>.</summary>
 public enum SortDirection

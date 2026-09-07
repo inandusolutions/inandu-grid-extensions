@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace InanduGrid.ServerSide.Tests;
+namespace Inandu.Grid.Extensions.Tests;
 
 public enum Status
 {

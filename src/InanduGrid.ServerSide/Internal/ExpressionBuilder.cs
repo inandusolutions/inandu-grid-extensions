@@ -5,7 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace InanduGrid.ServerSide.Internal;
+namespace Inandu.Grid.Extensions.Internal;
 
 /// <summary>
 /// Turns <see cref="InanduGridSort"/> / <see cref="FilterCondition"/> into LINQ expression trees.

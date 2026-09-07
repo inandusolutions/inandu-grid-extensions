@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
-using InanduGrid.ServerSide;
-using InanduGrid.ServerSide.Playground;
+using Inandu.Grid.Extensions;
+using Inandu.Grid.Extensions.Playground;
 
 var builder = WebApplication.CreateBuilder(args);
 

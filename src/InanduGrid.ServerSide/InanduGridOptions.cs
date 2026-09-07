@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// Everything <see cref="InanduGridQueryableExtensions.ToInanduGrid{T}(System.Collections.Generic.IEnumerable{T}, InanduGridOptions?)"/>

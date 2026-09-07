@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// The composed (but not yet executed) queryables produced by

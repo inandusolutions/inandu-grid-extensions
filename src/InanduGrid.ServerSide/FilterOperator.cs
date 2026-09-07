@@ -1,4 +1,4 @@
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// The comparison operators the grid's column filters and REST <c>{field}_{op}={value}</c> params

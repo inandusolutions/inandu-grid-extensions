@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace InanduGrid.ServerSide.Internal;
+namespace Inandu.Grid.Extensions.Internal;
 
 /// <summary>
 /// Resolves a grid <c>field</c> (optionally a dotted path like <c>"customer.name"</c>) to a

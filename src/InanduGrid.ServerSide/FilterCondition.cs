@@ -1,6 +1,6 @@
 using System;
 
-namespace InanduGrid.ServerSide;
+namespace Inandu.Grid.Extensions;
 
 /// <summary>
 /// One normalized <c>field · operator · value</c> predicate. A column filter

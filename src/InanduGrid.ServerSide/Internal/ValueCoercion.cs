@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace InanduGrid.ServerSide.Internal;
+namespace Inandu.Grid.Extensions.Internal;
 
 /// <summary>Coerces a filter operand (usually a <see cref="string"/> off the query string) to the target property's CLR type.</summary>
 internal static class ValueCoercion

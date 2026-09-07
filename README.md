@@ -32,7 +32,7 @@ dotnet add package InanduGrid.ServerSide
 ### ASP.NET Core (in-memory or any `IEnumerable<T>`)
 
 ```csharp
-using InanduGrid.ServerSide;
+using Inandu.Grid.Extensions;
 
 app.MapGet("/api/products", (HttpRequest request) =>
 {

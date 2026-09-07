@@ -6,12 +6,12 @@
 dotnet add package InanduGrid.ServerSide
 ```
 
-Targets `net8.0`; works on .NET 8 and later.
+Multi-targets `net8.0` and `net10.0`.
 
 ## 2. Expose an endpoint
 
 ```csharp
-using InanduGrid.ServerSide;
+using Inandu.Grid.Extensions;
 
 // minimal API
 app.MapGet("/api/orders", (HttpRequest req) =>
