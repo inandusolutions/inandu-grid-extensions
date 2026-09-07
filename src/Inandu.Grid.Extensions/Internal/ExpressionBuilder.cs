@@ -8,12 +8,12 @@ using System.Reflection;
 namespace Inandu.Grid.Extensions.Internal;
 
 /// <summary>
-/// Turns <see cref="InanduGridSort"/> / <see cref="FilterCondition"/> into LINQ expression trees.
-/// Everything here composes over <see cref="IQueryable{T}"/> so the same code path serves both an
-/// in-memory <see cref="IEnumerable{T}"/> (via <c>Queryable.AsQueryable</c>) and
-/// EF Core (translated to SQL). String operators are emitted as the plain
-/// <c>Contains</c>/<c>StartsWith</c>/<c>==</c> forms EF can translate; case-insensitivity is done by
-/// lowering both operands, which also translates.
+/// Turns <see cref="InanduGridSort"/> / <see cref="FilterCondition"/> / an
+/// <see cref="AdvancedFilterGroup"/> into LINQ expression trees. Everything here composes over
+/// <see cref="IQueryable{T}"/> so the same code path serves both an in-memory
+/// <see cref="IEnumerable{T}"/> (via <c>Queryable.AsQueryable</c>) and EF Core (translated to SQL).
+/// String operators are emitted as the plain <c>Contains</c>/<c>StartsWith</c>/<c>==</c> forms EF can
+/// translate; case-insensitivity is done by lowering both operands, which also translates.
 /// </summary>
 internal static class ExpressionBuilder
 {
@@ -81,7 +81,62 @@ internal static class ExpressionBuilder
         return source;
     }
 
-    // ── filtering ──────────────────────────────────────────────────────────
+    // ── grouping ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Groups <paramref name="source"/> by <paramref name="field"/> and returns one page of
+    /// <c>{ key, count }</c> groups plus the total group count. <paramref name="groupSort"/> — the
+    /// request's first sort — orders by <c>count</c> when its field is <c>"count"</c>, otherwise by
+    /// the group key; ascending unless the criterion is descending.
+    /// </summary>
+    public static (List<InanduGridGroup> Groups, int Total) GroupLevel<T>(
+        IQueryable<T> source, string field, InanduGridOptions options, int page, int pageSize, InanduGridSort? groupSort)
+    {
+        var param = Expression.Parameter(typeof(T), "x");
+        var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(field))
+            ?? throw new ArgumentException($"Unknown group field '{field}' on {typeof(T).Name}.", nameof(field));
+
+        var (access, keyType) = resolved;
+        var keySelector = Expression.Lambda(access, param);
+
+        var core = typeof(ExpressionBuilder)
+            .GetMethod(nameof(GroupLevelCore), BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(typeof(T), keyType);
+
+        return ((List<InanduGridGroup> Groups, int Total))core.Invoke(
+            null,
+            new object?[] { source, keySelector, field, page, pageSize, groupSort })!;
+    }
+
+    private static (List<InanduGridGroup> Groups, int Total) GroupLevelCore<T, TKey>(
+        IQueryable<T> source, Expression<Func<T, TKey>> keySelector, string field, int page, int pageSize, InanduGridSort? groupSort)
+    {
+        var grouped = source.GroupBy(keySelector).Select(g => new GroupCount<TKey> { Key = g.Key, Count = g.Count() });
+
+        var total = grouped.Count();
+
+        var byCount = groupSort is not null && string.Equals(groupSort.Field, "count", StringComparison.OrdinalIgnoreCase);
+        var desc = groupSort?.IsDescending == true;
+
+        var ordered = (byCount, desc) switch
+        {
+            (true, true) => grouped.OrderByDescending(x => x.Count),
+            (true, false) => grouped.OrderBy(x => x.Count),
+            (false, true) => grouped.OrderByDescending(x => x.Key),
+            _ => grouped.OrderBy(x => x.Key),
+        };
+
+        var skip = Math.Max(0, (page - 1)) * (long)pageSize;
+        var pageRows = ordered.Skip((int)Math.Min(skip, int.MaxValue)).Take(pageSize).ToList();
+
+        var groups = pageRows
+            .Select(x => new InanduGridGroup { Field = field, Key = x.Key, Count = x.Count })
+            .ToList();
+
+        return (groups, total);
+    }
+
+    // ── flat filtering (FilterCondition list + free text) ─────────────────
 
     public static Expression<Func<T, bool>>? BuildPredicate<T>(
         IEnumerable<FilterCondition> conditions,
@@ -107,6 +162,209 @@ internal static class ExpressionBuilder
         }
 
         return body is null ? null : Expression.Lambda<Func<T, bool>>(body, param);
+    }
+
+    // ── advanced filter tree (nested AND / OR) ────────────────────────────
+
+    public static Expression<Func<T, bool>>? BuildAdvancedPredicate<T>(AdvancedFilterGroup? root, InanduGridOptions options)
+    {
+        if (root is null || root.Children.Count == 0)
+        {
+            return null;
+        }
+
+        var param = Expression.Parameter(typeof(T), "x");
+        var body = BuildAdvancedNode(root, param, typeof(T), options);
+        return body is null ? null : Expression.Lambda<Func<T, bool>>(body, param);
+    }
+
+    private static Expression? BuildAdvancedNode(AdvancedFilterNode node, ParameterExpression param, Type rootType, InanduGridOptions options)
+    {
+        if (node is AdvancedFilterGroup group)
+        {
+            Expression? body = null;
+            var or = group.Combinator == AdvancedFilterCombinator.Or;
+            foreach (var child in group.Children)
+            {
+                var childExpr = BuildAdvancedNode(child, param, rootType, options);
+                if (childExpr is null)
+                {
+                    continue;
+                }
+
+                body = body is null
+                    ? childExpr
+                    : (or ? Expression.OrElse(body, childExpr) : Expression.AndAlso(body, childExpr));
+            }
+
+            return body;
+        }
+
+        var condition = (AdvancedFilterCondition)node;
+        var resolved = PropertyResolver.Resolve(param, rootType, options.MapField(condition.Field));
+        if (resolved is null)
+        {
+            if (options.ThrowOnUnknownField)
+            {
+                throw new ArgumentException($"Unknown filter field '{condition.Field}' on {rootType.Name}.", nameof(node));
+            }
+
+            return null;
+        }
+
+        var (member, memberType) = resolved.Value;
+        var underlying = Nullable.GetUnderlyingType(memberType) ?? memberType;
+        var ignoreCase = IsIgnoreCase(options.StringComparison);
+        var culture = options.Culture;
+
+        switch (condition.Operator)
+        {
+            case AdvancedFilterOperator.NotContains:
+            {
+                var inner = BuildScalarOperator(member, memberType, underlying, FilterOperator.Contains, condition.Value, ignoreCase, culture);
+                return inner is null ? null : Expression.Not(inner);
+            }
+
+            case AdvancedFilterOperator.Between:
+            {
+                var lo = BuildScalarOperator(member, memberType, underlying, FilterOperator.GreaterThanOrEqual, condition.Value, ignoreCase, culture);
+                var hi = BuildScalarOperator(member, memberType, underlying, FilterOperator.LessThanOrEqual, condition.Value2, ignoreCase, culture);
+                if (lo is null || hi is null)
+                {
+                    return lo ?? hi;
+                }
+
+                return Expression.AndAlso(lo, hi);
+            }
+
+            case AdvancedFilterOperator.IsTrue:
+                return BuildBoolEquals(member, memberType, underlying, true);
+
+            case AdvancedFilterOperator.IsFalse:
+                return BuildBoolEquals(member, memberType, underlying, false);
+
+            case AdvancedFilterOperator.IsEmpty:
+                return BuildIsEmpty(member, memberType, underlying, negate: false);
+
+            case AdvancedFilterOperator.IsNotEmpty:
+                return BuildIsEmpty(member, memberType, underlying, negate: true);
+
+            default:
+                return BuildScalarOperator(member, memberType, underlying, ToFilterOperator(condition.Operator), condition.Value, ignoreCase, culture);
+        }
+    }
+
+    // ── shared building blocks ───────────────────────────────────────────
+
+    private static Expression? BuildCondition(ParameterExpression param, Type rootType, FilterCondition condition, InanduGridOptions options)
+    {
+        var resolved = PropertyResolver.Resolve(param, rootType, options.MapField(condition.Field));
+        if (resolved is null)
+        {
+            if (options.ThrowOnUnknownField)
+            {
+                throw new ArgumentException($"Unknown filter field '{condition.Field}' on {rootType.Name}.", nameof(condition));
+            }
+
+            return null;
+        }
+
+        var (member, memberType) = resolved.Value;
+        var underlying = Nullable.GetUnderlyingType(memberType) ?? memberType;
+        var ignoreCase = IsIgnoreCase(options.StringComparison);
+
+        if (condition.Operator == FilterOperator.In)
+        {
+            var items = condition.Value switch
+            {
+                null => Enumerable.Empty<object?>(),
+                string s => s.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Cast<object?>(),
+                IEnumerable e => e.Cast<object?>(),
+                var v => new object?[] { v },
+            };
+            Expression? body = null;
+
+            foreach (var item in items)
+            {
+                if (!ValueCoercion.TryCoerce(item, memberType, options.Culture, out var coerced))
+                {
+                    continue;
+                }
+
+                var eq = BuildEquals(member, memberType, underlying, coerced, ignoreCase);
+                body = body is null ? eq : Expression.OrElse(body, eq);
+            }
+
+            return body;
+        }
+
+        return BuildScalarOperator(member, memberType, underlying, condition.Operator, condition.Value, ignoreCase, options.Culture);
+    }
+
+    /// <summary>
+    /// The per-operator expression for a single scalar comparison — shared by the flat
+    /// <see cref="FilterCondition"/> path and the advanced-filter tree. Does not handle
+    /// <see cref="FilterOperator.In"/> (list) — the caller does that.
+    /// </summary>
+    private static Expression? BuildScalarOperator(
+        Expression member, Type memberType, Type underlying,
+        FilterOperator op, object? rawValue, bool ignoreCase, IFormatProvider culture)
+    {
+        switch (op)
+        {
+            case FilterOperator.Contains:
+            case FilterOperator.StartsWith:
+            case FilterOperator.EndsWith:
+            {
+                if (underlying != typeof(string))
+                {
+                    return null;
+                }
+
+                var text = Convert.ToString(rawValue, culture);
+                if (string.IsNullOrEmpty(text))
+                {
+                    return null;
+                }
+
+                var method = op switch
+                {
+                    FilterOperator.StartsWith => StringStartsWith,
+                    FilterOperator.EndsWith => StringEndsWith,
+                    _ => StringContains,
+                };
+
+                return StringOp(member, ignoreCase ? text!.ToLower() : text!, method, ignoreCase);
+            }
+
+            case FilterOperator.Equal:
+            case FilterOperator.NotEqual:
+            {
+                if (!ValueCoercion.TryCoerce(rawValue, memberType, culture, out var coerced))
+                {
+                    return null;
+                }
+
+                var eq = BuildEquals(member, memberType, underlying, coerced, ignoreCase);
+                return op == FilterOperator.NotEqual ? Expression.Not(eq) : eq;
+            }
+
+            case FilterOperator.GreaterThan:
+            case FilterOperator.GreaterThanOrEqual:
+            case FilterOperator.LessThan:
+            case FilterOperator.LessThanOrEqual:
+            {
+                if (!ValueCoercion.TryCoerce(rawValue, memberType, culture, out var coerced))
+                {
+                    return null;
+                }
+
+                return BuildComparison(member, memberType, underlying, coerced, op, ignoreCase);
+            }
+
+            default:
+                return null;
+        }
     }
 
     private static Expression? BuildFreeText(ParameterExpression param, Type rootType, string? freeText, InanduGridOptions options)
@@ -147,105 +405,6 @@ internal static class ExpressionBuilder
         return body;
     }
 
-    private static Expression? BuildCondition(ParameterExpression param, Type rootType, FilterCondition condition, InanduGridOptions options)
-    {
-        var resolved = PropertyResolver.Resolve(param, rootType, options.MapField(condition.Field));
-        if (resolved is null)
-        {
-            if (options.ThrowOnUnknownField)
-            {
-                throw new ArgumentException($"Unknown filter field '{condition.Field}' on {rootType.Name}.", nameof(condition));
-            }
-
-            return null;
-        }
-
-        var (member, memberType) = resolved.Value;
-        var underlying = Nullable.GetUnderlyingType(memberType) ?? memberType;
-        var ignoreCase = IsIgnoreCase(options.StringComparison);
-
-        switch (condition.Operator)
-        {
-            case FilterOperator.Contains:
-            case FilterOperator.StartsWith:
-            case FilterOperator.EndsWith:
-            {
-                if (underlying != typeof(string))
-                {
-                    return null;
-                }
-
-                var text = Convert.ToString(condition.Value, options.Culture);
-                if (string.IsNullOrEmpty(text))
-                {
-                    return null;
-                }
-
-                var method = condition.Operator switch
-                {
-                    FilterOperator.StartsWith => StringStartsWith,
-                    FilterOperator.EndsWith => StringEndsWith,
-                    _ => StringContains,
-                };
-
-                return StringOp(member, ignoreCase ? text!.ToLower() : text!, method, ignoreCase);
-            }
-
-            case FilterOperator.In:
-            {
-                var items = condition.Value switch
-                {
-                    null => Enumerable.Empty<object?>(),
-                    string s => s.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Cast<object?>(),
-                    IEnumerable e => e.Cast<object?>(),
-                    var v => new object?[] { v },
-                };
-                Expression? body = null;
-
-                foreach (var item in items)
-                {
-                    if (!ValueCoercion.TryCoerce(item, memberType, options.Culture, out var coerced))
-                    {
-                        continue;
-                    }
-
-                    var eq = BuildEquals(member, memberType, underlying, coerced, ignoreCase);
-                    body = body is null ? eq : Expression.OrElse(body, eq);
-                }
-
-                return body;
-            }
-
-            case FilterOperator.Equal:
-            case FilterOperator.NotEqual:
-            {
-                if (!ValueCoercion.TryCoerce(condition.Value, memberType, options.Culture, out var coerced))
-                {
-                    return null;
-                }
-
-                var eq = BuildEquals(member, memberType, underlying, coerced, ignoreCase);
-                return condition.Operator == FilterOperator.NotEqual ? Expression.Not(eq) : eq;
-            }
-
-            case FilterOperator.GreaterThan:
-            case FilterOperator.GreaterThanOrEqual:
-            case FilterOperator.LessThan:
-            case FilterOperator.LessThanOrEqual:
-            {
-                if (!ValueCoercion.TryCoerce(condition.Value, memberType, options.Culture, out var coerced))
-                {
-                    return null;
-                }
-
-                return BuildComparison(member, memberType, underlying, coerced, condition.Operator, ignoreCase);
-            }
-
-            default:
-                return null;
-        }
-    }
-
     private static Expression BuildEquals(Expression member, Type memberType, Type underlying, object? value, bool ignoreCase)
     {
         if (underlying == typeof(string) && ignoreCase)
@@ -256,6 +415,33 @@ internal static class ExpressionBuilder
         }
 
         return Expression.Equal(member, TypedConstant(value, memberType, underlying), liftToNull: false, method: null);
+    }
+
+    private static Expression? BuildBoolEquals(Expression member, Type memberType, Type underlying, bool value)
+        => underlying != typeof(bool)
+            ? null
+            : Expression.Equal(member, TypedConstant(value, memberType, typeof(bool)), liftToNull: false, method: null);
+
+    private static Expression BuildIsEmpty(Expression member, Type memberType, Type underlying, bool negate)
+    {
+        Expression empty;
+
+        if (underlying == typeof(string))
+        {
+            var isNull = Expression.Equal(member, Expression.Constant(null, typeof(string)));
+            var isBlank = Expression.Equal(NullToEmpty(member), Expression.Constant(string.Empty));
+            empty = Expression.OrElse(isNull, isBlank);
+        }
+        else if (!memberType.IsValueType || Nullable.GetUnderlyingType(memberType) is not null)
+        {
+            empty = Expression.Equal(member, Expression.Constant(null, memberType), liftToNull: false, method: null);
+        }
+        else
+        {
+            empty = Expression.Constant(false);
+        }
+
+        return negate ? Expression.Not(empty) : empty;
     }
 
     /// <summary>A constant of <paramref name="memberType"/>, going through the underlying type so
@@ -274,7 +460,7 @@ internal static class ExpressionBuilder
 
     private static Expression? BuildComparison(Expression member, Type memberType, Type underlying, object? value, FilterOperator op, bool ignoreCase)
     {
-        // Ordered comparison of enum members isn't emitted (rare, and ambiguous); use eq / in / numeric fields instead.
+        // Ordered comparison of enum / bool / Guid isn't emitted (ambiguous); use eq / in / numeric fields.
         if (underlying.IsEnum || underlying == typeof(bool) || underlying == typeof(Guid))
         {
             return null;
@@ -330,4 +516,18 @@ internal static class ExpressionBuilder
         => comparison is StringComparison.OrdinalIgnoreCase
             or StringComparison.InvariantCultureIgnoreCase
             or StringComparison.CurrentCultureIgnoreCase;
+
+    private static FilterOperator ToFilterOperator(AdvancedFilterOperator op) => op switch
+    {
+        AdvancedFilterOperator.Eq => FilterOperator.Equal,
+        AdvancedFilterOperator.Neq => FilterOperator.NotEqual,
+        AdvancedFilterOperator.Contains => FilterOperator.Contains,
+        AdvancedFilterOperator.StartsWith => FilterOperator.StartsWith,
+        AdvancedFilterOperator.EndsWith => FilterOperator.EndsWith,
+        AdvancedFilterOperator.Gt => FilterOperator.GreaterThan,
+        AdvancedFilterOperator.Gte => FilterOperator.GreaterThanOrEqual,
+        AdvancedFilterOperator.Lt => FilterOperator.LessThan,
+        AdvancedFilterOperator.Lte => FilterOperator.LessThanOrEqual,
+        _ => FilterOperator.Equal,
+    };
 }

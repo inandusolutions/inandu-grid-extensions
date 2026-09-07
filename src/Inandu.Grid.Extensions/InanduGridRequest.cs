@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Inandu.Grid.Extensions;
 
@@ -21,6 +22,8 @@ public sealed class InanduGridRequest
         "page", "pagesize", "offset", "limit", "skip", "take",
         "sort", "orderby", "order",
         "q", "query", "search", "term",
+        "filter", "advancedfilter",
+        "groupby", "groupkeys",
         "_", "t", "_t",
     };
 
@@ -55,6 +58,49 @@ public sealed class InanduGridRequest
     /// addition to <see cref="ColumnFilters"/> and combined with <c>AND</c>.
     /// </summary>
     public IList<FilterCondition> Conditions { get; set; } = new List<FilterCondition>();
+
+    private string? _filterJson;
+    private AdvancedFilterGroup? _advancedFilter;
+
+    /// <summary>
+    /// The raw JSON of the advanced filter tree — the <c>filter</c> param produced by
+    /// <c>@inandu-solutions/grid-pro</c>'s <c>advancedQueryToRestParams</c>. Setting it (re)parses
+    /// <see cref="AdvancedFilter"/>.
+    /// </summary>
+    [JsonPropertyName("filter")]
+    public string? Filter
+    {
+        get => _filterJson;
+        set
+        {
+            _filterJson = value;
+            _advancedFilter = AdvancedFilterJson.Parse(value);
+        }
+    }
+
+    /// <summary>
+    /// The parsed advanced filter tree (nested AND / OR), from <see cref="Filter"/> or set directly.
+    /// Applied in addition to <see cref="ColumnFilters"/> / <see cref="Conditions"/>, combined with <c>AND</c>.
+    /// </summary>
+    [JsonIgnore]
+    public AdvancedFilterGroup? AdvancedFilter
+    {
+        get => _advancedFilter;
+        set => _advancedFilter = value;
+    }
+
+    /// <summary>
+    /// Fields to group by, outermost first — the <c>groupBy</c> param (<c>groupBy=region,category</c>).
+    /// Consumed by <c>ToInanduGridGrouped</c>.
+    /// </summary>
+    public IList<string> GroupBy { get; set; } = new List<string>();
+
+    /// <summary>
+    /// The already-expanded group path for a drill-down request — the <c>groupKeys</c> param
+    /// (<c>groupKeys=EMEA</c> or <c>groupKeys=EMEA,2026</c>). Each value is matched with <c>eq</c>
+    /// against the corresponding <see cref="GroupBy"/> field.
+    /// </summary>
+    public IList<string> GroupKeys { get; set; } = new List<string>();
 
     /// <summary>
     /// Every filter, flattened: <see cref="ColumnFilters"/> expanded via
@@ -160,6 +206,31 @@ public sealed class InanduGridRequest
                 if (!string.IsNullOrEmpty(value))
                 {
                     request.Query = value;
+                }
+            }
+            else if (KeyIs(key, "filter") || KeyIs(key, "advancedFilter"))
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    request.Filter = value;
+                }
+            }
+            else if (KeyIs(key, "groupBy"))
+            {
+                foreach (var g in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var name = g.Trim();
+                    if (name.Length > 0)
+                    {
+                        request.GroupBy.Add(name);
+                    }
+                }
+            }
+            else if (KeyIs(key, "groupKeys"))
+            {
+                foreach (var gk in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    request.GroupKeys.Add(gk.Trim());
                 }
             }
             else if (!ReservedKeys.Contains(key))
