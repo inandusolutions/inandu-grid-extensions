@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up .NET (8 + 10)
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      - run: dotnet restore Inandu.Grid.Extensions.sln
+
+      - name: Build
+        run: dotnet build Inandu.Grid.Extensions.sln -c Release --no-restore
+
+      - name: Test (net8.0 + net10.0)
+        run: dotnet test Inandu.Grid.Extensions.sln -c Release --no-build
