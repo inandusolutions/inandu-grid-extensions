@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest a capability for Inandu.Grid.Extensions
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This library mirrors what `<inandu-grid serverSide>` sends. Features that don't correspond
+        to a grid request, or that would pull a runtime dependency into the core package, are
+        unlikely to land.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do on the server that the library doesn't support today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: >
+        What would it look like? The request parameter or `InanduGridOptions` setting, the method
+        signature, the result shape.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
