@@ -6,7 +6,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-09-07
+## [0.3.0] - 2026-09-08
 
 ### Added
 
@@ -32,6 +32,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `ThrowOnUnknownField` (and the new guard's `Reject` mode) now throw `InanduGridRequestException`
   instead of `ArgumentException`.
+
+### Packaging
+
+- **First release on [nuget.org](https://www.nuget.org/packages/Inandu.Grid.Extensions).**
+- Source moved to GitHub — `RepositoryUrl` now points at
+  <https://github.com/inandusolutions/inandu-grid-extensions>; tagged `v0.3.0`.
 
 ## [0.2.0] - 2026-09-07
 
@@ -91,7 +97,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions
-[0.3.0]: https://github.com/inandusolutions/inandu-grid-extensions
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/inandusolutions/inandu-grid-extensions/releases/tag/v0.3.0
 [0.2.0]: https://github.com/inandusolutions/inandu-grid-extensions
 [0.1.0]: https://github.com/inandusolutions/inandu-grid-extensions
