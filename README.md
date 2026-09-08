@@ -250,8 +250,9 @@ packages with the .NET 10 SDK so the `.nupkg`s ship both. See
 ## Contributing
 
 Issues and PRs welcome on
-[GitHub](https://github.com/inandusolutions/inandu-grid-extensions).
-Please add tests for behaviour changes and keep the library dependency-free.
+[GitHub](https://github.com/inandusolutions/inandu-grid-extensions). Add tests for behaviour
+changes and keep the core library dependency-free — see [CONTRIBUTING.md](CONTRIBUTING.md).
+For security reports, see [`.github/SECURITY.md`](.github/SECURITY.md) — don't open a public issue.
 
 ## License
 
