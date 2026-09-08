@@ -3,6 +3,11 @@
 Server-side **paging, sorting and filtering** for
 [`@inandu-solutions/grid-angular`](https://www.npmjs.com/package/@inandu-solutions/grid-angular).
 
+This is the .NET/EF Core **server-side companion** to the
+[**inandu-grid**](https://github.com/inandusolutions/inandu-grid) Angular data grid: it turns the
+request an `<inandu-grid serverSide>` sends into a single paged database query. Repo:
+<https://github.com/inandusolutions/inandu-grid-extensions>.
+
 One extension method — `ToInanduGrid()` — takes the request an `<inandu-grid serverSide>` makes
 (multi-column sort + free-text search + per-column filters + the page or block to show) and returns
 **just that page of rows plus the total match count**, ready to hand straight back to the grid.
@@ -244,8 +249,8 @@ packages with the .NET 10 SDK so the `.nupkg`s ship both. See
 
 ## Contributing
 
-Issues and PRs welcome on the
-[Azure DevOps repo](https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions).
+Issues and PRs welcome on
+[GitHub](https://github.com/inandusolutions/inandu-grid-extensions).
 Please add tests for behaviour changes and keep the library dependency-free.
 
 ## License

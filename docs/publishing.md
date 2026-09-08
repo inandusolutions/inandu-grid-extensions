@@ -60,7 +60,8 @@ were built with — bump all three together.
 - The **core** package has **no runtime dependencies**. `…EntityFrameworkCore` depends on
   `Microsoft.EntityFrameworkCore` (≥ 8.0.11); `…AspNetCore` uses the ASP.NET Core shared framework
   (`<FrameworkReference>`). Both also depend on the matching `Inandu.Grid.Extensions`.
-- `RepositoryUrl` points at the private Azure DevOps repo; SourceLink is not wired, so
-  step-into-source won't work for external consumers. `PackageProjectUrl` points at the public
-  companion Angular library.
+- `RepositoryUrl` points at the public GitHub repo
+  (<https://github.com/inandusolutions/inandu-grid-extensions>); SourceLink is not wired, so
+  step-into-source won't work for external consumers. `PackageProjectUrl` points at the
+  companion Angular library (<https://github.com/inandusolutions/inandu-grid>).
 - `artifacts/`, `*.nupkg` and `*.snupkg` are git-ignored.

@@ -21,7 +21,7 @@
     <Authors>Inandu SAS</Authors>
     <Copyright>Copyright © Inandu SAS</Copyright>
     <PackageProjectUrl>https://github.com/inandusolutions/inandu-grid</PackageProjectUrl>
-    <RepositoryUrl>https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions</RepositoryUrl>
+    <RepositoryUrl>https://github.com/inandusolutions/inandu-grid-extensions</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>

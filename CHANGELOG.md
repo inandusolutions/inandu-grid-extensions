@@ -91,7 +91,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions
-[0.3.0]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions
-[0.2.0]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions
-[0.1.0]: https://inandu.visualstudio.com/DefaultCollection/grid-private/_git/grid-server-side-extensions
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions
+[0.3.0]: https://github.com/inandusolutions/inandu-grid-extensions
+[0.2.0]: https://github.com/inandusolutions/inandu-grid-extensions
+[0.1.0]: https://github.com/inandusolutions/inandu-grid-extensions
