@@ -4,6 +4,7 @@ Thanks for taking the time to contribute.
 
 ## Ground rules
 
+- Be respectful — see the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 - For anything non-trivial, open an issue first so we can agree on the approach
   before you write code.
 - Security issues: **do not** open a public issue — see
