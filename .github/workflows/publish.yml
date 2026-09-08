@@ -1,21 +1,32 @@
 name: Publish to NuGet
 
-# Fires when a v* tag is pushed. Packs the three packable projects and pushes them
-# to nuget.org via trusted publishing (OIDC) — no long-lived API key.
+# Packs the three packable projects and pushes them to nuget.org via trusted
+# publishing (OIDC) — no long-lived API key.
 #
-# One-time setup on the repo:
-#   - nuget.org: create a Trusted Publisher policy for this repo + workflow file
-#     (Repository owner: inandusolutions, Repository: inandu-grid-extensions,
-#      Workflow file: publish.yml).
-#   - GitHub: Settings > Secrets and variables > Actions > Variables >
-#     NUGET_USER = the nuget.org account/org that owns the packages.
+# Runs on a pushed v* tag, or manually (Actions > Publish to NuGet > Run workflow)
+# with the version typed in.
+#
+# One-time setup:
+#   - nuget.org > Account > Trusted Publishing: add a policy —
+#       Repository owner: inandusolutions
+#       Repository:       inandu-grid-extensions
+#       Workflow file:    publish.yml
+#       Packages / glob:  Inandu.Grid.Extensions*
+#   - GitHub > Settings > Secrets and variables > Actions > Variables:
+#       NUGET_USER = the nuget.org account/org that owns the packages
 #
 # Release flow (see docs/publishing.md): bump <Version> in the three src/**/*.csproj,
-# move the CHANGELOG notes, commit, then `git tag vX.Y.Z && git push --tags`.
+# move the CHANGELOG notes, commit, then `git tag vX.Y.Z && git push --tags`
+# (the tag must be cut from a commit that contains this file).
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish — must match <Version> in the csprojs (e.g. 0.3.0)'
+        required: true
 
 permissions:
   contents: read
@@ -34,14 +45,18 @@ jobs:
             8.x
             10.x
 
-      - name: Resolve version from the tag
+      - name: Resolve version
         id: ver
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
           CSPROJ_VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/Inandu.Grid.Extensions/Inandu.Grid.Extensions.csproj)
-          echo "tag=$VERSION  csproj=$CSPROJ_VERSION"
+          echo "publishing=$VERSION  csproj=$CSPROJ_VERSION"
           if [ "$VERSION" != "$CSPROJ_VERSION" ]; then
-            echo "::error::Tag v$VERSION does not match <Version>$CSPROJ_VERSION in the core csproj — bump the src/**/*.csproj first."
+            echo "::error::Version $VERSION does not match <Version>$CSPROJ_VERSION in the core csproj — bump src/**/*.csproj first."
             exit 1
           fi
 
