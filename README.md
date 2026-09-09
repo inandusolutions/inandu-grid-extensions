@@ -1,5 +1,11 @@
 # Inandu.Grid.Extensions
 
+[![NuGet](https://img.shields.io/nuget/v/Inandu.Grid.Extensions.svg)](https://www.nuget.org/packages/Inandu.Grid.Extensions)
+[![downloads](https://img.shields.io/nuget/dt/Inandu.Grid.Extensions.svg)](https://www.nuget.org/packages/Inandu.Grid.Extensions)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4)
+[![grid demo](https://img.shields.io/badge/grid%20demo-live-0e7c74)](https://inandusolutions.github.io/inandu-grid/)
+
 Server-side **paging, sorting and filtering** for
 [`@inandu-solutions/grid-angular`](https://www.npmjs.com/package/@inandu-solutions/grid-angular).
 
@@ -210,7 +216,9 @@ Wire the grid's `serverSide` outputs to a request and bind the response:
 
 Either hand-build the query string, or let `@inandu-solutions/grid-pro`'s
 `createInanduGridDataSource` do it — the params it emits are exactly what this package parses. See
-the [playground](playground/) for a full working example.
+the [playground](playground/) for a full working example, and the
+[**live grid demo**](https://inandusolutions.github.io/inandu-grid/) for the front end this
+serves.
 
 ## Request contract
 
