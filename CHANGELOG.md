@@ -101,5 +101,5 @@ _Nothing yet — see [0.3.0](#030---2026-09-08) for the latest release._
 
 [Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/inandusolutions/inandu-grid-extensions/releases/tag/v0.3.0
-[0.2.0]: https://github.com/inandusolutions/inandu-grid-extensions
-[0.1.0]: https://github.com/inandusolutions/inandu-grid-extensions
+[0.2.0]: https://github.com/inandusolutions/inandu-grid-extensions/blob/main/CHANGELOG.md#020---2026-09-07
+[0.1.0]: https://github.com/inandusolutions/inandu-grid-extensions/blob/main/CHANGELOG.md#010---2026-09-07
