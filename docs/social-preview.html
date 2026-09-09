@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1280px;
+    height: 640px;
+    overflow: hidden;
+  }
+
+  body {
+    --paper: #fbfaf7;
+    --ink: #1b1f24;
+    --accent: #0e7c74;
+    --muted: #5c6470;
+    --rule: #e4e0d6;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+    --code-comment: #7d8aa3;
+    --code-accent: #7dd3c8;
+    --code-str: #a5d6a7;
+
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    position: relative;
+  }
+
+  /* accent bar down the left edge */
+  body::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 10px;
+    background: var(--accent);
+  }
+
+  .left {
+    width: 620px;
+    flex: 0 0 620px;
+    padding: 68px 48px 56px 74px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kicker {
+    font-family: "Consolas", "SFMono-Regular", Menlo, monospace;
+    font-size: 16px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 60px;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+    margin-top: 20px;
+  }
+
+  .pkg {
+    font-family: "Consolas", "SFMono-Regular", Menlo, monospace;
+    font-size: 18px;
+    color: var(--muted);
+    margin-top: 16px;
+  }
+
+  .tagline {
+    font-size: 22px;
+    line-height: 1.5;
+    color: #3a4048;
+    margin-top: 28px;
+    max-width: 470px;
+  }
+  .tagline code {
+    font-family: "Consolas", "SFMono-Regular", Menlo, monospace;
+    font-size: 19px;
+    color: var(--accent);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 11px;
+    margin-top: 32px;
+  }
+
+  .chip {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 7px 15px;
+    border-radius: 999px;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+  }
+  .chip.solid {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .spacer { flex: 1; }
+
+  .url {
+    font-family: "Consolas", "SFMono-Regular", Menlo, monospace;
+    font-size: 18px;
+    color: var(--muted);
+  }
+
+  .right {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* a code card that bleeds off the right/bottom edges, mirroring the grid preview's screenshot card */
+  .code {
+    position: absolute;
+    top: 150px;
+    left: 8px;
+    right: -30px;
+    padding: 32px 36px;
+    background: var(--code-bg);
+    border-radius: 14px;
+    box-shadow: 0 30px 70px -24px rgba(27, 31, 36, 0.4);
+  }
+  .code pre {
+    font-family: "Consolas", "SFMono-Regular", Menlo, monospace;
+    font-size: 18px;
+    line-height: 1.8;
+    color: var(--code-ink);
+    white-space: pre;
+  }
+  .code .c { color: var(--code-comment); }
+  .code .k { color: var(--code-accent); }
+  .code .s { color: var(--code-str); }
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="kicker">Server-side companion &middot; .NET</div>
+    <h1>Inandu.Grid<wbr>.Extensions</h1>
+    <div class="pkg">nuget: Inandu.Grid.Extensions</div>
+    <div class="tagline">
+      Turns an <code>&lt;inandu-grid serverSide&gt;</code> request into a single
+      paged database query &mdash; paging, sorting, filtering, grouping,
+      aggregates and keyset cursors.
+    </div>
+    <div class="chips">
+      <span class="chip solid">MIT</span>
+      <span class="chip">.NET 8 &amp; 10</span>
+      <span class="chip">EF Core</span>
+      <span class="chip">zero deps (core)</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="url">github.com/inandusolutions/inandu-grid-extensions</div>
+  </div>
+
+  <div class="right">
+    <div class="code"><pre><span class="c">// ASP.NET Core &mdash; one call does paging,</span>
+<span class="c">// sorting, filtering &amp; grouping in one query</span>
+
+app.<span class="k">MapGet</span>(<span class="s">"/api/accounts"</span>,
+    (HttpRequest req, AppDb db) =&gt;
+        db.Accounts
+          .<span class="k">AsNoTracking</span>()
+          .<span class="k">ToInanduGridAsync</span>(
+              req.QueryString.Value));</pre></div>
+  </div>
+</body>
+</html>
