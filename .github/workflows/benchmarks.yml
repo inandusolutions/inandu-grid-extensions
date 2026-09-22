@@ -1,0 +1,38 @@
+name: Benchmarks
+
+# Manual only — BenchmarkDotNet numbers from a shared CI runner aren't comparable across runs or to
+# real hardware, so this isn't wired to push/PR. It exists so anyone can trigger a reproducible run
+# and inspect the results, not as a source of truth for the README's reference numbers (those are
+# measured on real hardware — see benchmarks/README.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: "BenchmarkDotNet --filter glob(s), space-separated (default: everything)"
+        required: false
+        default: "*"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      - run: dotnet restore Inandu.Grid.Extensions.sln
+
+      - name: Run benchmarks (short job)
+        working-directory: benchmarks/Inandu.Grid.Extensions.Benchmarks
+        run: dotnet run -c Release -f net8.0 -- --filter ${{ inputs.filter }} --job short --exporters json markdown
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-results
+          path: benchmarks/Inandu.Grid.Extensions.Benchmarks/BenchmarkDotNet.Artifacts/
+          retention-days: 30
