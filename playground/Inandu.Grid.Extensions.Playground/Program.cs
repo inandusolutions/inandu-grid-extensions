@@ -12,7 +12,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(o => o.OperationFilter<InanduGridSwaggerFilter>());
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 var app = builder.Build();
@@ -36,7 +36,8 @@ app.MapGet("/api/products", (HttpRequest request) =>
 
     return Results.Ok(result);
 })
-.WithName("GetProducts");
+.WithName("GetProducts")
+.WithMetadata(new InanduGridEndpoint());
 
 static void Configure(InanduGridOptions o)
 {
@@ -51,7 +52,8 @@ app.MapGet("/api/products/summary", (HttpRequest request) =>
             p => new ProductSummary(p.Id, p.Name, p.Price, p.Status),
             request.QueryString.Value,
             Configure)))
-    .WithName("GetProductSummaries");
+    .WithName("GetProductSummaries")
+    .WithMetadata(new InanduGridEndpoint());
 
 // Server-side grouping with lazy drill-down (?groupBy=category  ·  &groupKeys=Cables).
 app.MapGet("/api/products/groups", (HttpRequest request) =>
@@ -59,7 +61,8 @@ app.MapGet("/api/products/groups", (HttpRequest request) =>
         var r = ProductStore.All.ToInanduGridGrouped(InanduGridOptions.FromQueryString(request.QueryString.Value, Configure));
         return r.IsLeaf ? Results.Ok(r) : Results.Ok(r);
     })
-    .WithName("GetProductGroups");
+    .WithName("GetProductGroups")
+    .WithMetadata(new InanduGridEndpoint { Grouped = true });
 
 // Advanced filter / any request from a JSON POST body, via the ASP.NET Core binding helper.
 app.MapPost("/api/products/query", async (HttpRequest request) =>
@@ -77,7 +80,8 @@ app.MapInanduGrid("/api/catalog", ProductStore.All, o =>
     Configure(o);
     o.EnableKeyset = true;
     o.Limits.MaxInListItems = 100;
-});
+})
+.WithMetadata(new InanduGridEndpoint { Keyset = true });
 
 // distinct values for a set-filter checklist: /api/products/distinct/category
 app.MapInanduGridDistinct("/api/products/distinct/{field}", ProductStore.All, configure: Configure);
