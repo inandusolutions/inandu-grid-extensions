@@ -1,34 +1,60 @@
 # Inandu.Grid.Extensions
 
+**One extension method turns an [inandu-grid](https://github.com/inandusolutions/inandu-grid)
+`serverSide` request into a single paged SQL query.** No hand-rolled dynamic sort/filter builder,
+no OData, no GraphQL layer to stand up — `ToInanduGrid()` / `ToInanduGridAsync()` read the grid's
+own wire contract (multi-column sort, free-text search, per-column filters, grouping, aggregates,
+keyset paging) and do the query work for you, over plain `IEnumerable<T>` or EF Core `IQueryable<T>`.
+
 [![NuGet](https://img.shields.io/nuget/v/Inandu.Grid.Extensions.svg)](https://www.nuget.org/packages/Inandu.Grid.Extensions)
 [![downloads](https://img.shields.io/nuget/dt/Inandu.Grid.Extensions.svg)](https://www.nuget.org/packages/Inandu.Grid.Extensions)
+[![CI](https://github.com/inandusolutions/inandu-grid-extensions/actions/workflows/ci.yml/badge.svg)](https://github.com/inandusolutions/inandu-grid-extensions/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512bd4)
 [![grid demo](https://img.shields.io/badge/grid%20demo-live-0e7c74)](https://inandusolutions.github.io/inandu-grid/)
 
-Server-side **paging, sorting and filtering** for
-[`@inandu-solutions/grid-angular`](https://www.npmjs.com/package/@inandu-solutions/grid-angular).
+## Try it in 30 seconds
 
-This is the .NET/EF Core **server-side companion** to the
-[**inandu-grid**](https://github.com/inandusolutions/inandu-grid) Angular data grid: it turns the
-request an `<inandu-grid serverSide>` sends into a single paged database query. Repo:
-<https://github.com/inandusolutions/inandu-grid-extensions>.
+```bash
+dotnet add package Inandu.Grid.Extensions
+```
 
-One extension method — `ToInanduGrid()` — takes the request an `<inandu-grid serverSide>` makes
-(multi-column sort + free-text search + per-column filters + the page or block to show) and returns
-**just that page of rows plus the total match count**, ready to hand straight back to the grid.
+```csharp
+using Inandu.Grid.Extensions;
 
-- **Zero runtime dependencies.** Dynamic sorting/filtering is built on `System.Linq.Expressions` —
-  no `System.Linq.Dynamic.Core`, no reflection-based query languages.
-- **Works with `IEnumerable<T>` and `IQueryable<T>`.** Over EF Core the sort/filter/paging translate
-  to SQL, so the database only returns one page. `ApplyInanduGridQuery` is the `async` escape hatch.
-- **Matches the grid's wire contract.** The query-string parser understands the same params
-  `@inandu-solutions/grid-pro`'s `createInanduGridDataSource` / `createInanduGridServerRowModel`
-  produce (`page`, `pageSize`, `sort=-field`, `field_gte=…`, `q=…`), and `InanduGridColumnFilter`
-  mirrors the core `InanduGridColumnFilterValue`.
-- **Free / MIT**, published to NuGet.
+app.MapGet("/api/products", (HttpRequest request) =>
+    _products.ToInanduGrid(request.QueryString.Value)); // { data, total, page, pageSize, pageCount }
+```
 
-Multi-targets **`net8.0`** and **`net10.0`**.
+That single call reads `page`/`sort`/`q`/column filters straight off the query string and returns
+just the page the grid asked for — see [Quick start](#quick-start) below for the EF Core (async)
+and ASP.NET Core binding variants.
+
+## Who is this for?
+
+- **.NET / ASP.NET Core APIs** backing an `<inandu-grid serverSide>` (or any client speaking the
+  same [query-param contract](docs/request-contract.md)) that don't want to hand-write dynamic
+  LINQ sort/filter/paging for every entity.
+- **EF Core apps** that want the database to do the work — sort/filter/paging translate to SQL, so
+  only one page is ever fetched, not the whole table scanned in memory.
+- **Teams that want the query surface locked down** — per-column allow-lists, a query cost guard,
+  and a `ThrowOnUnknownField` mode for public endpoints.
+
+**When not to use it:** if you're not using inandu-grid's `serverSide` wire contract (or something
+compatible with it) at all — this isn't a general-purpose OData or GraphQL server, see
+[Not included](#not-included) below.
+
+## Not included
+
+Deliberately scoped to what the grid's wire contract needs, not a general-purpose query API:
+
+- **No OData or GraphQL.** The query-string contract is inandu-grid's own (documented in
+  [docs/request-contract.md](docs/request-contract.md)), not a spec-compliant OData/GraphQL server.
+- **No built-in caching layer.** Every request runs a real query; add your own caching (response
+  caching, a distributed cache) in front of it if you need one.
+- **.NET only.** There's no equivalent for other backend stacks — the contract itself is plain
+  query-string params, so a Node/Python/Go backend can implement it by hand against the same
+  [request contract](docs/request-contract.md) docs, just not with this library.
 
 ### Packages
 
@@ -37,6 +63,8 @@ Multi-targets **`net8.0`** and **`net10.0`**.
 | `Inandu.Grid.Extensions` | the core `ToInanduGrid()` — zero dependencies |
 | `Inandu.Grid.Extensions.EntityFrameworkCore` | `ToInanduGridAsync()` — `CountAsync` + `ToListAsync` |
 | `Inandu.Grid.Extensions.AspNetCore` | `[FromInanduGrid]` model binder + minimal-API binding |
+
+Multi-targets **`net8.0`** and **`net10.0`**.
 
 ---
 
@@ -202,6 +230,11 @@ app.MapInanduGridGrouped("/api/products/groups", ctx => ctx.RequestServices.GetR
 app.MapInanduGridDistinct("/api/products/distinct/{field}", products);
 ```
 
+Using Swagger/OpenAPI? Minimal-API endpoints that read the query string by hand (which is what all
+of the above do) are invisible to Swashbuckle by default — `page`, `sort`, `q` and friends show up
+as undocumented. See [docs/openapi-swagger.md](docs/openapi-swagger.md) for the ~50-line filter the
+[playground](playground/) uses to document them properly.
+
 ## The Angular side
 
 Wire the grid's `serverSide` outputs to a request and bind the response:
@@ -246,7 +279,7 @@ See **[docs/options.md](docs/options.md)**. Highlights: `DefaultPageSize`, `MaxP
 
 ```bash
 dotnet build
-dotnet test                                                   # 130 tests, net8.0 + net10.0
+dotnet test                                                   # 165 tests, net8.0 + net10.0
 dotnet run -c Release --project benchmarks/Inandu.Grid.Extensions.Benchmarks
 ```
 
@@ -255,11 +288,25 @@ The libraries multi-target `net8.0;net10.0` **when built with the .NET 10 SDK**;
 packages with the .NET 10 SDK so the `.nupkg`s ship both. See
 [docs/publishing.md](docs/publishing.md).
 
+### Benchmarks
+
+[BenchmarkDotNet](https://benchmarkdotnet.org/) micro-benchmarks over 100,000 in-memory rows, one
+benchmark per query shape (plain page, filter, sort, filter+sort+page, free-text, advanced filter,
+grouping, projection). Reference numbers (i5-7200U, .NET 8, `short` job): **filter+sort+page ≈
+10 ms, advanced-filter ≈ 4 ms, top-level grouping ≈ 12 ms** — treat these as ballpark, not a
+guarantee, and run it on your own hardware for a number that matters to your deployment. Full
+methodology and the complete benchmark list: [benchmarks/README.md](benchmarks/README.md). A
+`workflow_dispatch`-triggered [Benchmarks workflow](.github/workflows/benchmarks.yml) runs the
+same suite on GitHub's runners and uploads the results as a build artifact, for a reproducible
+(if not hardware-comparable) run anyone can trigger.
+
 ## Contributing
 
 Issues and PRs welcome on
 [GitHub](https://github.com/inandusolutions/inandu-grid-extensions). Add tests for behaviour
 changes and keep the core library dependency-free — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Questions and usage help: see [`.github/SUPPORT.md`](.github/SUPPORT.md) — prefer
+[Discussions](https://github.com/inandusolutions/inandu-grid-extensions/discussions) over an issue.
 For security reports, see [`.github/SECURITY.md`](.github/SECURITY.md) — don't open a public issue.
 
 ## License
