@@ -1,0 +1,278 @@
+{
+  "comment": "Shared contract fixture. Keep identical to inandu-grid-extensions tests/Inandu.Grid.Extensions.Tests/Contract/server-queries.json: React asserts query -> queryString, the .NET side asserts queryString -> parsed.",
+  "cases": [
+    {
+      "name": "first page, no state",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {},
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": []
+      }
+    },
+    {
+      "name": "fourth page",
+      "query": {
+        "page": 3,
+        "pageSize": 10,
+        "sortCriteria": [],
+        "filterValues": {},
+        "filterQuery": ""
+      },
+      "queryString": "page=4&pageSize=10",
+      "parsed": {
+        "page": 4,
+        "pageSize": 10,
+        "sort": [],
+        "q": null,
+        "conditions": []
+      }
+    },
+    {
+      "name": "multi-column sort",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [
+          {
+            "field": "category",
+            "direction": "asc"
+          },
+          {
+            "field": "price",
+            "direction": "desc"
+          }
+        ],
+        "filterValues": {},
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&sort=category%2C-price",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [
+          "category",
+          "-price"
+        ],
+        "q": null,
+        "conditions": []
+      }
+    },
+    {
+      "name": "free-text search is trimmed",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {},
+        "filterQuery": "  red bike "
+      },
+      "queryString": "page=1&pageSize=25&q=red+bike",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": "red bike",
+        "conditions": []
+      }
+    },
+    {
+      "name": "text filter",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "name": {
+            "text": "cable"
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&name_contains=cable",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "name contains cable"
+        ]
+      }
+    },
+    {
+      "name": "number range",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "price": {
+            "min": "20",
+            "max": "100"
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&price_gte=20&price_lte=100",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "price gte 20",
+          "price lte 100"
+        ]
+      }
+    },
+    {
+      "name": "date range",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "createdOn": {
+            "from": "2026-01-01",
+            "to": "2026-06-30"
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&createdOn_gte=2026-01-01&createdOn_lte=2026-06-30",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "createdOn gte 2026-01-01",
+          "createdOn lte 2026-06-30"
+        ]
+      }
+    },
+    {
+      "name": "boolean filter",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "active": {
+            "bool": "true"
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&active_eq=true",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "active eq true"
+        ]
+      }
+    },
+    {
+      "name": "set filter takes over the column",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "status": {
+            "values": [
+              "Active",
+              "Draft"
+            ],
+            "text": "ignored"
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&status_in=Active%2CDraft",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "status in Active,Draft"
+        ]
+      }
+    },
+    {
+      "name": "empty filter values are dropped",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "name": {
+            "text": ""
+          },
+          "age": {},
+          "tag": {
+            "values": []
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": []
+      }
+    },
+    {
+      "name": "everything at once",
+      "query": {
+        "page": 1,
+        "pageSize": 50,
+        "sortCriteria": [
+          {
+            "field": "name",
+            "direction": "desc"
+          }
+        ],
+        "filterValues": {
+          "name": {
+            "text": "a"
+          },
+          "price": {
+            "min": "5"
+          }
+        },
+        "filterQuery": "bike"
+      },
+      "queryString": "page=2&pageSize=50&sort=-name&q=bike&name_contains=a&price_gte=5",
+      "parsed": {
+        "page": 2,
+        "pageSize": 50,
+        "sort": [
+          "-name"
+        ],
+        "q": "bike",
+        "conditions": [
+          "name contains a",
+          "price gte 5"
+        ]
+      }
+    }
+  ]
+}

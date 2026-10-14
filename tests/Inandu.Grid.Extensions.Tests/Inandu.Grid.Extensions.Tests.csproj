@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Contract/server-queries.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Inandu.Grid.Extensions/Inandu.Grid.Extensions.csproj" />
   </ItemGroup>
 
