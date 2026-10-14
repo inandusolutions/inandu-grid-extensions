@@ -6,7 +6,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-_Nothing yet — see [0.3.0](#030---2026-09-08) for the latest release._
+### Changed
+
+- The `net10.0` build of the EF Core package now targets EF Core 10 (`Microsoft.EntityFrameworkCore` 10.0.x);
+  the `net8.0` build keeps EF Core 9.0.x, so existing .NET 8 consumers are unaffected. No public API change.
+- Test projects moved from the deprecated `xunit` 2.9.3 to `xunit.v3`.
 
 ## [0.3.0] - 2026-09-08
 
