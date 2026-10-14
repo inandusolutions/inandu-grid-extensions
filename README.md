@@ -33,7 +33,7 @@ and ASP.NET Core binding variants.
 ## Who is this for?
 
 - **.NET / ASP.NET Core APIs** backing an `<inandu-grid serverSide>` (Angular), a
-  [React](https://github.com/inandusolutions/inandu-grid-react) table, or any client speaking the
+  [React](https://github.com/inandusolutions/inandu-grid-react) grid or table, or any client speaking the
   same [query-param contract](docs/request-contract.md) that don't want to hand-write dynamic
   LINQ sort/filter/paging for every entity.
 - **EF Core apps** that want the database to do the work — sort/filter/paging translate to SQL, so
@@ -256,18 +256,33 @@ serves.
 
 ## The React side
 
-The contract is plain query-string params, so it doesn't depend on the front-end framework: a
-React app (for example one using [`@inandu-solutions/grid-react`](https://github.com/inandusolutions/inandu-grid-react),
-or any other table) can call the same endpoint. `grid-react` has no built-in `serverSide` mode today,
-so you build the query from your own sort / filter / page state and bind the response:
+[`@inandu-solutions/grid-react`](https://github.com/inandusolutions/inandu-grid-react) (0.2.0+) has a
+`serverSide` mode built for this contract. `useInanduGridServer` turns the grid's page / sort / search /
+column filters into the query string this package parses, and keeps the previous page on screen
+while the next one loads:
 
 ```tsx
-const params = new URLSearchParams({ page: String(page), pageSize: "25", sort: "-createdOn", q: search });
-const res = await fetch(`/api/products?${params}`);
-const { data, total } = await res.json(); // pass `data` to the grid, `total` to your pager
+import { InanduGrid, useInanduGridServer } from '@inandu-solutions/grid-react';
+
+const server = useInanduGridServer({ url: '/api/products' });
+
+<InanduGrid
+  rows={server.rows}
+  columns={columns}
+  pageSize={25}
+  serverSide={{ totalItems: server.total }}
+  onQueryChange={server.setQuery}
+/>;
 ```
 
-The parameters and their meaning are in the [request contract](docs/request-contract.md).
+The server side stays the one-liner from [Try it in 30 seconds](#try-it-in-30-seconds). A runnable
+React example against this repo's [playground](playground/) lives in
+[`examples/server-side`](https://github.com/inandusolutions/inandu-grid-react/tree/main/examples/server-side),
+and both repos test the same [query-string fixture](tests/Inandu.Grid.Extensions.Tests/Contract/server-queries.json),
+so the contract can't drift unnoticed.
+
+Any other React table works too: the contract is plain query-string params, so build the query
+from your own state and bind `{ data, total }`. See the [request contract](docs/request-contract.md).
 
 ## Request contract
 
