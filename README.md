@@ -32,8 +32,9 @@ and ASP.NET Core binding variants.
 
 ## Who is this for?
 
-- **.NET / ASP.NET Core APIs** backing an `<inandu-grid serverSide>` (or any client speaking the
-  same [query-param contract](docs/request-contract.md)) that don't want to hand-write dynamic
+- **.NET / ASP.NET Core APIs** backing an `<inandu-grid serverSide>` (Angular), a
+  [React](https://github.com/inandusolutions/inandu-grid-react) table, or any client speaking the
+  same [query-param contract](docs/request-contract.md) that don't want to hand-write dynamic
   LINQ sort/filter/paging for every entity.
 - **EF Core apps** that want the database to do the work — sort/filter/paging translate to SQL, so
   only one page is ever fetched, not the whole table scanned in memory.
@@ -252,6 +253,21 @@ Either hand-build the query string, or let `@inandu-solutions/grid-pro`'s
 the [playground](playground/) for a full working example, and the
 [**live grid demo**](https://inandusolutions.github.io/inandu-grid/) for the front end this
 serves.
+
+## The React side
+
+The contract is plain query-string params, so it doesn't depend on the front-end framework: a
+React app (for example one using [`@inandu-solutions/grid-react`](https://github.com/inandusolutions/inandu-grid-react),
+or any other table) can call the same endpoint. `grid-react` has no built-in `serverSide` mode today,
+so you build the query from your own sort / filter / page state and bind the response:
+
+```tsx
+const params = new URLSearchParams({ page: String(page), pageSize: "25", sort: "-createdOn", q: search });
+const res = await fetch(`/api/products?${params}`);
+const { data, total } = await res.json(); // pass `data` to the grid, `total` to your pager
+```
+
+The parameters and their meaning are in the [request contract](docs/request-contract.md).
 
 ## Request contract
 
