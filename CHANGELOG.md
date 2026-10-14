@@ -6,6 +6,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+_Nothing yet — see [0.4.0](#040---2026-10-14) for the latest release._
+
+## [0.4.0] - 2026-10-14
+
+### Added
+
+- Swagger/OpenAPI: `MapInanduGrid` and `ToInanduGrid()` minimal-API endpoints now document their query
+  parameters (`page`, `sort`, `q`, `filters`, `aggregate`, …) via a Swashbuckle operation filter.
+
 ### Changed
 
 - The `net10.0` build of the EF Core package now targets EF Core 10 (`Microsoft.EntityFrameworkCore` 10.0.x);
@@ -103,7 +112,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/inandusolutions/inandu-grid-extensions/releases/tag/v0.4.0
 [0.3.0]: https://github.com/inandusolutions/inandu-grid-extensions/releases/tag/v0.3.0
 [0.2.0]: https://github.com/inandusolutions/inandu-grid-extensions/blob/main/CHANGELOG.md#020---2026-09-07
 [0.1.0]: https://github.com/inandusolutions/inandu-grid-extensions/blob/main/CHANGELOG.md#010---2026-09-07
