@@ -33,7 +33,8 @@ and ASP.NET Core binding variants.
 ## Who is this for?
 
 - **.NET / ASP.NET Core APIs** backing an `<inandu-grid serverSide>` (Angular), a
-  [React](https://github.com/inandusolutions/inandu-grid-react) grid or table, or any client speaking the
+  [React](https://github.com/inandusolutions/inandu-grid-react) or
+  [Vue](https://github.com/inandusolutions/inandu-grid-vue) grid or table, or any client speaking the
   same [query-param contract](docs/request-contract.md) that don't want to hand-write dynamic
   LINQ sort/filter/paging for every entity.
 - **EF Core apps** that want the database to do the work — sort/filter/paging translate to SQL, so
@@ -283,6 +284,33 @@ so the contract can't drift unnoticed.
 
 Any other React table works too: the contract is plain query-string params, so build the query
 from your own state and bind `{ data, total }`. See the [request contract](docs/request-contract.md).
+
+## The Vue side
+
+[`@inandu-solutions/grid-vue`](https://github.com/inandusolutions/inandu-grid-vue) has the same
+`serverSide` mode. `useInanduGridServer` returns refs (`rows`, `total`, `loading`, `error`) and a
+`setQuery` handler for the grid's `query-change` event:
+
+```vue
+<script setup lang="ts">
+import { InanduGrid, useInanduGridServer } from '@inandu-solutions/grid-vue';
+
+const server = useInanduGridServer({ url: '/api/products' });
+</script>
+
+<template>
+  <InanduGrid
+    :rows="server.rows.value"
+    :columns="columns"
+    :page-size="25"
+    :server-side="{ totalItems: server.total.value }"
+    @query-change="server.setQuery"
+  />
+</template>
+```
+
+A runnable Vue example lives in
+[`examples/server-side`](https://github.com/inandusolutions/inandu-grid-vue/tree/main/examples/server-side).
 
 ## Request contract
 
