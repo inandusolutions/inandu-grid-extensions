@@ -40,6 +40,18 @@ internal static class AggregateBuilder
                 continue;
             }
 
+            // min / max / sum reveal a column's values, so aggregates follow CanFilter like
+            // grouping and distinct do.
+            if (options.FindColumn(agg.Field) is { CanFilter: false })
+            {
+                if (options.ThrowOnUnknownField)
+                {
+                    throw InanduGridRequestException.Single($"aggregate.{agg.Field}", $"Aggregating '{agg.Field}' is not allowed.");
+                }
+
+                continue;
+            }
+
             var param = Expression.Parameter(typeof(T), "x");
             var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(agg.Field));
             if (resolved is null)

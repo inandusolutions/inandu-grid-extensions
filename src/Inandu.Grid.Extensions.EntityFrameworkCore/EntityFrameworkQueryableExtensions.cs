@@ -124,6 +124,7 @@ public static class InanduGridEntityFrameworkExtensions
         options ??= new InanduGridOptions();
         var request = options.Request ?? new InanduGridRequest();
         RequestGuard.Enforce(request, options);
+        GroupGuard.EnforceGroupBy(request, options, typeof(T));
         var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
@@ -208,8 +209,13 @@ public static class InanduGridEntityFrameworkExtensions
         var request = options.Request ?? new InanduGridRequest();
         RequestGuard.Enforce(request, options);
 
-        var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
         var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        if (!GroupGuard.IsDistinctAllowed(field, options, typeof(T)))
+        {
+            return new InanduGridDistinctResult { Field = field, Page = page, PageSize = pageSize };
+        }
+
+        var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
         var order = request.Sort.Count > 0 ? request.Sort[0] : null;
 
         var (groups, total) = await GroupLevelAsync(filtered, field, options, page, pageSize, order, cancellationToken).ConfigureAwait(false);
