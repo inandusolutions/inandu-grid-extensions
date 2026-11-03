@@ -6,6 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `InanduGridOptions.AllowUnconfiguredFields` (default `true`). Set it to `false` for a
+  deny-by-default endpoint: only fields declared with `o.Column(...)` can be filtered, sorted,
+  grouped, listed as distinct values or aggregated, and free-text search covers only
+  `SearchableFields` plus `.Searchable()` columns. Recommended for public endpoints and for the
+  `ToInanduGrid(selector, …)` overloads, which query the source entity rather than the DTO.
+
 ### Security
 
 - `ToInanduGridDistinct` / `MapInanduGridDistinct` and `groupBy` now honour the column allow-list.
@@ -16,18 +24,16 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `aggregate=` (`min` / `max` / `sum` / `avg` / `count` on a field) honours `CanFilter` too, so the
   aggregate row can't reveal a `.NotFilterable()` column's values. `count:*` is unaffected.
 
-### Added
-
-- `InanduGridOptions.AllowUnconfiguredFields` (default `true`). Set it to `false` for a
-  deny-by-default endpoint: only fields declared with `o.Column(...)` can be filtered, sorted,
-  grouped, listed as distinct values or aggregated, and free-text search covers only
-  `SearchableFields` plus `.Searchable()` columns. Recommended for public endpoints and for the
-  `ToInanduGrid(selector, …)` overloads, which query the source entity rather than the DTO.
-
 ### Fixed
 
 - An unknown `groupBy` or distinct field no longer throws `ArgumentException` (an HTTP 500 from the
   minimal-API helpers): it is dropped, or rejected with `InanduGridRequestException` in strict mode.
+- `MapInanduGrid`, `MapInanduGridGrouped` and `MapInanduGridDistinct` now return `400` with a
+  `ValidationProblemDetails` body when the request is rejected (`ThrowOnUnknownField`, or a
+  `Limits` cap with `OnLimitExceeded = Reject`), instead of letting `InanduGridRequestException`
+  escape as an HTTP 500. The endpoints also declare `ProducesValidationProblem()` for OpenAPI.
+- `MapInanduGridDistinct` without a field now answers with the same `ValidationProblemDetails` shape
+  (`errors.field`) instead of an ad-hoc `{ "error": "…" }` body.
 
 ## [0.4.0] - 2026-10-14
 

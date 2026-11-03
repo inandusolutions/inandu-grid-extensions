@@ -26,9 +26,10 @@ public static class MapInanduGridEndpoints
         => endpoints.MapGet(pattern, async (HttpContext ctx) =>
             {
                 var request = await InanduGridBinding.FromHttpRequestAsync(ctx.Request, ctx.RequestAborted).ConfigureAwait(false);
-                return Results.Ok(source(ctx).ToInanduGrid(InanduGridOptions.For(request, configure)));
+                return Run(() => source(ctx).ToInanduGrid(InanduGridOptions.For(request, configure)));
             })
-            .Produces<InanduGridResult<T>>();
+            .Produces<InanduGridResult<T>>()
+            .ProducesValidationProblem();
 
     /// <summary>GET endpoint for server-side grouping (<c>?groupBy=…&amp;groupKeys=…</c>).</summary>
     public static RouteHandlerBuilder MapInanduGridGrouped<T>(
@@ -36,9 +37,10 @@ public static class MapInanduGridEndpoints
         => endpoints.MapGet(pattern, async (HttpContext ctx) =>
             {
                 var request = await InanduGridBinding.FromHttpRequestAsync(ctx.Request, ctx.RequestAborted).ConfigureAwait(false);
-                return Results.Ok(source(ctx).ToInanduGridGrouped(InanduGridOptions.For(request, configure)));
+                return Run(() => source(ctx).ToInanduGridGrouped(InanduGridOptions.For(request, configure)));
             })
-            .Produces<InanduGridGroupedResult<T>>();
+            .Produces<InanduGridGroupedResult<T>>()
+            .ProducesValidationProblem();
 
     /// <inheritdoc cref="MapInanduGridGrouped{T}(IEndpointRouteBuilder, string, Func{HttpContext, IEnumerable{T}}, Action{InanduGridOptions}?)"/>
     public static RouteHandlerBuilder MapInanduGridGrouped<T>(
@@ -60,18 +62,49 @@ public static class MapInanduGridEndpoints
 
                 if (string.IsNullOrEmpty(field))
                 {
-                    return Results.BadRequest(new { error = "a 'field' route value or query parameter is required." });
+                    return Results.ValidationProblem(new Dictionary<string, string[]>
+                    {
+                        ["field"] = new[] { "a 'field' route value or query parameter is required." },
+                    });
                 }
 
                 var request = await InanduGridBinding.FromHttpRequestAsync(ctx.Request, ctx.RequestAborted).ConfigureAwait(false);
-                return Results.Ok(source(ctx).ToInanduGridDistinct(field, InanduGridOptions.For(request, configure)));
+                return Run(() => source(ctx).ToInanduGridDistinct(field, InanduGridOptions.For(request, configure)));
             })
             .Produces<InanduGridDistinctResult>()
-            .Produces(StatusCodes.Status400BadRequest);
+            .ProducesValidationProblem();
 
     /// <inheritdoc cref="MapInanduGridDistinct{T}(IEndpointRouteBuilder, string, Func{HttpContext, IEnumerable{T}}, Func{HttpContext, string?}?, Action{InanduGridOptions}?)"/>
     public static RouteHandlerBuilder MapInanduGridDistinct<T>(
         this IEndpointRouteBuilder endpoints, string pattern, IEnumerable<T> source,
         Func<HttpContext, string?>? fieldSelector = null, Action<InanduGridOptions>? configure = null)
         => endpoints.MapInanduGridDistinct(pattern, _ => source, fieldSelector, configure);
+
+    /// <summary>
+    /// Runs the query and returns <c>200</c>, or — when the request is rejected (an unknown /
+    /// forbidden field with <see cref="InanduGridOptions.ThrowOnUnknownField"/>, or a
+    /// <see cref="InanduGridLimits"/> cap with <see cref="InanduGridLimitMode.Reject"/>) — a
+    /// <c>400</c> <c>ValidationProblemDetails</c> built from <see cref="InanduGridRequestException.Errors"/>
+    /// instead of an unhandled exception (HTTP 500).
+    /// </summary>
+    private static IResult Run<TResult>(Func<TResult> query)
+    {
+        try
+        {
+            return Results.Ok(query());
+        }
+        catch (InanduGridRequestException ex)
+        {
+            return ToValidationProblem(ex);
+        }
+    }
+
+    /// <summary>The <c>400</c> response for a rejected request.</summary>
+    internal static IResult ToValidationProblem(InanduGridRequestException ex)
+    {
+        var errors = ex.Errors.Count > 0
+            ? new Dictionary<string, string[]>(ex.Errors)
+            : new Dictionary<string, string[]> { ["request"] = new[] { ex.Message } };
+        return Results.ValidationProblem(errors, detail: ex.Message);
+    }
 }

@@ -37,6 +37,13 @@ public class MapEndpointTests
                     e.MapInanduGrid("/items", Data);
                     e.MapInanduGridGrouped("/items/groups", Data);
                     e.MapInanduGridDistinct("/items/distinct/{field}", Data);
+                    e.MapInanduGrid("/strict", Data, o => o.ThrowOnUnknownField = true);
+                    e.MapInanduGridGrouped("/strict/groups", Data, o => o.ThrowOnUnknownField = true);
+                    e.MapInanduGrid("/capped", Data, o =>
+                    {
+                        o.Limits.MaxSortColumns = 1;
+                        o.OnLimitExceeded = InanduGridLimitMode.Reject;
+                    });
                 });
             });
             web.ConfigureServices(s => s.AddRouting());
@@ -95,5 +102,48 @@ public class MapEndpointTests
         using var host = await builder.StartAsync();
         var resp = await host.GetTestClient().GetAsync("/d");
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(doc.GetProperty("errors").TryGetProperty("field", out _));
+    }
+
+    [Fact]
+    public async Task MapInanduGrid_returns_400_validation_problem_for_an_unknown_field_in_strict_mode()
+    {
+        var client = await ServerAsync();
+        var response = await client.GetAsync("/strict?sort=nope");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(doc.GetProperty("errors").TryGetProperty("sort", out _));
+    }
+
+    [Fact]
+    public async Task MapInanduGrid_returns_400_validation_problem_when_a_limit_is_rejected()
+    {
+        var client = await ServerAsync();
+        var response = await client.GetAsync("/capped?sort=id,name");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(doc.GetProperty("errors").TryGetProperty("sort", out _));
+    }
+
+    [Fact]
+    public async Task MapInanduGridGrouped_returns_400_validation_problem_in_strict_mode()
+    {
+        var client = await ServerAsync();
+        var response = await client.GetAsync("/strict/groups?groupBy=group&nope_eq=1");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Strict_endpoint_still_returns_200_for_a_valid_request()
+    {
+        var client = await ServerAsync();
+        var response = await client.GetAsync("/strict?sort=-score&pageSize=5");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }
