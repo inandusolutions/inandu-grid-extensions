@@ -29,3 +29,16 @@ jobs:
 
       - name: Test (net8.0 + net10.0)
         run: dotnet test Inandu.Grid.Extensions.sln -c Release --no-build
+
+      - name: Vulnerable packages (direct + transitive)
+        run: |
+          dotnet list Inandu.Grid.Extensions.sln package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Vulnerable NuGet packages found - see the log above."
+            exit 1
+          fi
+
+      - name: Pack (API compatibility check against the last release)
+        # EnablePackageValidation + PackageValidationBaselineVersion fail the pack on a breaking
+        # public-API change. Needs the .NET 10 SDK so both target frameworks are produced.
+        run: dotnet pack Inandu.Grid.Extensions.sln -c Release --no-build -o ./artifacts
