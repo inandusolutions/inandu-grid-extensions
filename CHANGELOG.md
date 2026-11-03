@@ -6,6 +6,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+_Nothing yet_
+
+## [0.5.0] - 2026-11-03
+
 ### Added
 
 - `InanduGridOptions.AllowUnconfiguredFields` (default `true`). Set it to `false` for a
@@ -20,6 +24,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of 9.0.x, so .NET 8 apps on EF Core 8 can use it without upgrading. Since 0.3.x the
   minimum had been raised to EF Core 9 by an automated dependency bump. The `net10.0` build still
   requires EF Core 10. Tests keep running against the latest EF Core.
+- NuGet tags and the core package description now mention the React and Vue grids as well as Angular. Package API validation (`EnablePackageValidation`, baseline 0.4.1) now runs on every pack, so an accidental breaking change to the public API fails the build.
 
 ## [0.4.1] - 2026-11-03
 
@@ -148,7 +153,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/inandusolutions/inandu-grid-extensions/releases/tag/v0.4.0
 [0.3.0]: https://github.com/inandusolutions/inandu-grid-extensions/releases/tag/v0.3.0
