@@ -217,4 +217,28 @@ public class EfCoreTests : IClassFixture<ShopFixture>
         Assert.Equal(6, result.Total);
         Assert.Equal(240, result.Values.Sum(v => v.Count));
     }
+
+    [Fact]
+    public async Task ToInanduGridDistinctAsync_honours_NotFilterable()
+    {
+        await using var db = _fx.NewContext();
+
+        var result = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("category", "?pageSize=50",
+            o => o.Column("category").NotFilterable());
+
+        Assert.Empty(result.Values);
+        Assert.Equal(0, result.Total);
+    }
+
+    [Fact]
+    public async Task ToInanduGridGroupedAsync_drops_a_NotFilterable_groupBy()
+    {
+        await using var db = _fx.NewContext();
+
+        var result = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category",
+            o => o.Column("category").NotFilterable());
+
+        Assert.True(result.IsLeaf);
+        Assert.Equal(240, result.Total);
+    }
 }

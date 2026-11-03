@@ -19,10 +19,16 @@ _products.ToInanduGrid(qs, o =>
 |---|---|
 | `.Path("Clr.Path")` | Resolve this grid field to a CLR property path (wins over `FieldMap`). |
 | `.Filterable(ops…)` | Restrict filtering to these operators. No args ⇒ any operator. |
-| `.NotFilterable()` | Disallow filtering entirely. |
+| `.NotFilterable()` | Disallow filtering entirely — and grouping / distinct values, which expose the same values. |
 | `.Sortable(bool)` | Allow / disallow sorting. |
 | `.Searchable(bool)` | Force this column in / out of free-text search. |
 | `.Label("…")` | Human label used in error messages. |
+
+**Grouping, distinct values and aggregates follow `CanFilter`.** `groupBy`, `ToInanduGridDistinct`
+and `aggregate=min:/max:/sum:/avg:/count:<field>` reveal a column's values just as a filter does, so a `.NotFilterable()` column can't be grouped or listed:
+the `groupBy` level (and its `groupKeys` entry) is dropped, a distinct request returns no values,
+and the aggregate is left out.
+An unknown group / distinct field is handled the same way, instead of throwing `ArgumentException`.
 
 `SearchableFields` and the per-column `Searchable(...)` overrides combine: columns forced *in* are
 added, columns forced *out* are removed.

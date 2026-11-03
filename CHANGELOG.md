@@ -6,8 +6,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- `ToInanduGridDistinct` / `MapInanduGridDistinct` and `groupBy` now honour the column allow-list.
+  Previously a `.NotFilterable()` column's values could still be listed through the distinct-values
+  endpoint or by grouping on it. Grouping and distinct now follow `CanFilter`: a disallowed field is
+  dropped (no values / a leaf result) or, with `ThrowOnUnknownField`, rejected with
+  `InanduGridRequestException`. Applies to the in-memory and EF Core (`…Async`) entry points.
+- `aggregate=` (`min` / `max` / `sum` / `avg` / `count` on a field) honours `CanFilter` too, so the
+  aggregate row can't reveal a `.NotFilterable()` column's values. `count:*` is unaffected.
+
 ### Fixed
 
+- An unknown `groupBy` or distinct field no longer throws `ArgumentException` (an HTTP 500 from the
+  minimal-API helpers): it is dropped, or rejected with `InanduGridRequestException` in strict mode.
 - `MapInanduGrid`, `MapInanduGridGrouped` and `MapInanduGridDistinct` now return `400` with a
   `ValidationProblemDetails` body when the request is rejected (`ThrowOnUnknownField`, or a
   `Limits` cap with `OnLimitExceeded = Reject`), instead of letting `InanduGridRequestException`
