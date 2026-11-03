@@ -14,7 +14,7 @@
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 
-  <!-- NuGet package metadata. Only src/Inandu.Grid.Extensions sets IsPackable=true. -->
+  <!-- NuGet package metadata. The three src/ projects (Inandu.Grid.Extensions, .AspNetCore, .EntityFrameworkCore) set IsPackable=true. -->
   <PropertyGroup>
     <Product>Inandu.Grid.Extensions</Product>
     <Company>Inandu SAS</Company>
@@ -25,7 +25,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>inandu-grid;angular;data-grid;server-side;paging;sorting;filtering;linq;aspnetcore</PackageTags>
+    <PackageTags>inandu-grid;angular;react;vue;data-grid;server-side;paging;sorting;filtering;linq;aspnetcore</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
