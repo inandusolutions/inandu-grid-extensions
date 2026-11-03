@@ -13,6 +13,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   endpoint or by grouping on it. Grouping and distinct now follow `CanFilter`: a disallowed field is
   dropped (no values / a leaf result) or, with `ThrowOnUnknownField`, rejected with
   `InanduGridRequestException`. Applies to the in-memory and EF Core (`…Async`) entry points.
+- `aggregate=` (`min` / `max` / `sum` / `avg` / `count` on a field) honours `CanFilter` too, so the
+  aggregate row can't reveal a `.NotFilterable()` column's values. `count:*` is unaffected.
 
 ### Fixed
 

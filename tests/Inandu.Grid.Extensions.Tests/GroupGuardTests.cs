@@ -114,4 +114,23 @@ public class GroupGuardTests
 
         Assert.True(result.IsLeaf);
     }
+
+    [Fact]
+    public void Aggregate_on_a_NotFilterable_column_is_dropped()
+    {
+        var result = Sample.Products().ToInanduGrid("?aggregate=max:price,count:*",
+            o => o.Column("price").NotFilterable());
+
+        Assert.NotNull(result.Aggregations);
+        Assert.False(result.Aggregations!.ContainsKey("max:price"));
+        Assert.Equal(Sample.Products().Count, result.Aggregations["count:*"]);
+    }
+
+    [Fact]
+    public void Aggregate_on_a_NotFilterable_column_is_refused_in_strict_mode()
+    {
+        var ex = Assert.Throws<InanduGridRequestException>(() => Sample.Products().ToInanduGrid("?aggregate=max:price",
+            o => { o.Column("price").NotFilterable(); o.ThrowOnUnknownField = true; }));
+        Assert.True(ex.Errors.ContainsKey("aggregate.price"));
+    }
 }
