@@ -8,6 +8,13 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - dependencies
+    ignore:
+      # The bare package is referenced only by src/Inandu.Grid.Extensions.EntityFrameworkCore, where
+      # its version is the minimum consumers must have (see the comment in that csproj). Bumping it
+      # forces every consumer onto the new version — 8ed2abb moved .NET 8 apps from EF Core 8 to 9.
+      # Raise it by hand when an advisory requires it. Test projects use the *.Sqlite package, which
+      # is still updated by the group below.
+      - dependency-name: Microsoft.EntityFrameworkCore
     groups:
       entity-framework-core:
         patterns:

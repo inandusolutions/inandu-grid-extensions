@@ -14,6 +14,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `SearchableFields` plus `.Searchable()` columns. Recommended for public endpoints and for the
   `ToInanduGrid(selector, …)` overloads, which query the source entity rather than the DTO.
 
+### Changed
+
+- `Inandu.Grid.Extensions.EntityFrameworkCore` (`net8.0`) now requires EF Core **8.0.11** or later
+  instead of 9.0.x, so .NET 8 apps on EF Core 8 can use it without upgrading. Since 0.3.x the
+  minimum had been raised to EF Core 9 by an automated dependency bump. The `net10.0` build still
+  requires EF Core 10. Tests keep running against the latest EF Core.
+
 ## [0.4.1] - 2026-11-03
 
 ### Security

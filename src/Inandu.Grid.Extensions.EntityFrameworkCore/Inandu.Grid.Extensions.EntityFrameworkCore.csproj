@@ -24,9 +24,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Minimum; consumers bring their own (newer) EF Core. 8.0.11 clears the transitive
-         Microsoft.Extensions.Caching.Memory advisory (GHSA-qj66-m88j-hmgj). -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.22" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <!-- This is the MINIMUM EF Core a consumer must have, not the version we test against: NuGet
+         resolves the consumer's own (newer) EF Core. Keep it low so a .NET 8 app on EF Core 8 isn't
+         forced onto EF Core 9. 8.0.11 clears the transitive Microsoft.Extensions.Caching.Memory
+         advisory (GHSA-qj66-m88j-hmgj). Raise it only for an advisory or a new API we need —
+         Dependabot is told to leave this package alone (.github/dependabot.yml). The test
+         projects run against the latest EF Core. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" Condition="'$(TargetFramework)' == 'net8.0'" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.14" Condition="'$(TargetFramework)' == 'net10.0'" />
   </ItemGroup>
 
