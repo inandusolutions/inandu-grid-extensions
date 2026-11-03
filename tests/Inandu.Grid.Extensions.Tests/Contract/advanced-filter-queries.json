@@ -1,0 +1,136 @@
+{
+  "comment": "Shared contract fixture for the advanced-filter tree. Keep identical to inandu-grid-extensions tests/Inandu.Grid.Extensions.Tests/Contract/advanced-filter-queries.json. grid-pro (Angular / React / Vue) asserts query -> the `filter` param (advancedQueryToRestParams); the .NET side asserts filter -> parsed (AdvancedFilterJson.Parse). `parsed` is a canonical rendering: groups as and(...)/or(...), conditions as `field operator value`, `between` as `field between low..high`, unary operators without a value, booleans as true/false; null when the server gets no filter.",
+  "operators": [
+    "eq", "neq", "contains", "notContains", "startsWith", "endsWith",
+    "gt", "gte", "lt", "lte", "between", "isTrue", "isFalse", "isEmpty", "isNotEmpty"
+  ],
+  "cases": [
+    {
+      "name": "single equality",
+      "query": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "status", "operator": "eq", "value": "Active" }
+      ] },
+      "filter": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "status", "operator": "eq", "value": "Active" }
+      ] },
+      "parsed": "and(status eq Active)"
+    },
+    {
+      "name": "nested and / or with between",
+      "query": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "status", "operator": "eq", "value": "Active" },
+        { "kind": "group", "combinator": "or", "children": [
+          { "kind": "condition", "field": "price", "operator": "gt", "value": 100 },
+          { "kind": "condition", "field": "stock", "operator": "between", "value": 0, "value2": 30 }
+        ] }
+      ] },
+      "filter": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "status", "operator": "eq", "value": "Active" },
+        { "kind": "group", "combinator": "or", "children": [
+          { "kind": "condition", "field": "price", "operator": "gt", "value": 100 },
+          { "kind": "condition", "field": "stock", "operator": "between", "value": 0, "value2": 30 }
+        ] }
+      ] },
+      "parsed": "and(status eq Active, or(price gt 100, stock between 0..30))"
+    },
+    {
+      "name": "every operator",
+      "query": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "c_eq", "operator": "eq", "value": "a" },
+        { "kind": "condition", "field": "c_neq", "operator": "neq", "value": "b" },
+        { "kind": "condition", "field": "c_contains", "operator": "contains", "value": "c" },
+        { "kind": "condition", "field": "c_notContains", "operator": "notContains", "value": "d" },
+        { "kind": "condition", "field": "c_startsWith", "operator": "startsWith", "value": "e" },
+        { "kind": "condition", "field": "c_endsWith", "operator": "endsWith", "value": "f" },
+        { "kind": "condition", "field": "c_gt", "operator": "gt", "value": 1 },
+        { "kind": "condition", "field": "c_gte", "operator": "gte", "value": 2 },
+        { "kind": "condition", "field": "c_lt", "operator": "lt", "value": 3 },
+        { "kind": "condition", "field": "c_lte", "operator": "lte", "value": 4 },
+        { "kind": "condition", "field": "c_between", "operator": "between", "value": 5, "value2": 6 },
+        { "kind": "condition", "field": "c_isTrue", "operator": "isTrue" },
+        { "kind": "condition", "field": "c_isFalse", "operator": "isFalse" },
+        { "kind": "condition", "field": "c_isEmpty", "operator": "isEmpty" },
+        { "kind": "condition", "field": "c_isNotEmpty", "operator": "isNotEmpty" }
+      ] },
+      "filter": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "c_eq", "operator": "eq", "value": "a" },
+        { "kind": "condition", "field": "c_neq", "operator": "neq", "value": "b" },
+        { "kind": "condition", "field": "c_contains", "operator": "contains", "value": "c" },
+        { "kind": "condition", "field": "c_notContains", "operator": "notContains", "value": "d" },
+        { "kind": "condition", "field": "c_startsWith", "operator": "startsWith", "value": "e" },
+        { "kind": "condition", "field": "c_endsWith", "operator": "endsWith", "value": "f" },
+        { "kind": "condition", "field": "c_gt", "operator": "gt", "value": 1 },
+        { "kind": "condition", "field": "c_gte", "operator": "gte", "value": 2 },
+        { "kind": "condition", "field": "c_lt", "operator": "lt", "value": 3 },
+        { "kind": "condition", "field": "c_lte", "operator": "lte", "value": 4 },
+        { "kind": "condition", "field": "c_between", "operator": "between", "value": 5, "value2": 6 },
+        { "kind": "condition", "field": "c_isTrue", "operator": "isTrue" },
+        { "kind": "condition", "field": "c_isFalse", "operator": "isFalse" },
+        { "kind": "condition", "field": "c_isEmpty", "operator": "isEmpty" },
+        { "kind": "condition", "field": "c_isNotEmpty", "operator": "isNotEmpty" }
+      ] },
+      "parsed": "and(c_eq eq a, c_neq neq b, c_contains contains c, c_notContains notContains d, c_startsWith startsWith e, c_endsWith endsWith f, c_gt gt 1, c_gte gte 2, c_lt lt 3, c_lte lte 4, c_between between 5..6, c_isTrue isTrue, c_isFalse isFalse, c_isEmpty isEmpty, c_isNotEmpty isNotEmpty)"
+    },
+    {
+      "name": "incomplete conditions and empty groups are pruned",
+      "query": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "name", "operator": "contains", "value": "" },
+        { "kind": "condition", "field": "price", "operator": "between", "value": 10 },
+        { "kind": "group", "combinator": "or", "children": [] },
+        { "kind": "group", "combinator": "or", "children": [
+          { "kind": "condition", "field": "sku", "operator": "eq" }
+        ] },
+        { "kind": "condition", "field": "status", "operator": "eq", "value": "Active" }
+      ] },
+      "filter": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "status", "operator": "eq", "value": "Active" }
+      ] },
+      "parsed": "and(status eq Active)"
+    },
+    {
+      "name": "nothing left means no filter param",
+      "query": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "name", "operator": "contains", "value": "" },
+        { "kind": "group", "combinator": "or", "children": [] }
+      ] },
+      "filter": null,
+      "parsed": null
+    },
+    {
+      "name": "a single-child group keeps its combinator",
+      "query": { "kind": "group", "combinator": "or", "children": [
+        { "kind": "condition", "field": "active", "operator": "isTrue" }
+      ] },
+      "filter": { "kind": "group", "combinator": "or", "children": [
+        { "kind": "condition", "field": "active", "operator": "isTrue" }
+      ] },
+      "parsed": "or(active isTrue)"
+    },
+    {
+      "name": "dotted path, quotes, commas and non-ASCII text",
+      "query": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "customer.name", "operator": "contains", "value": "Zoë \"O'Brien\", Ltd & Co" }
+      ] },
+      "filter": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "customer.name", "operator": "contains", "value": "Zoë \"O'Brien\", Ltd & Co" }
+      ] },
+      "parsed": "and(customer.name contains Zoë \"O'Brien\", Ltd & Co)"
+    },
+    {
+      "name": "number, boolean and numeric-looking string operands",
+      "query": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "price", "operator": "gte", "value": 12.5 },
+        { "kind": "condition", "field": "qty", "operator": "eq", "value": 0 },
+        { "kind": "condition", "field": "active", "operator": "eq", "value": true },
+        { "kind": "condition", "field": "code", "operator": "eq", "value": "007" }
+      ] },
+      "filter": { "kind": "group", "combinator": "and", "children": [
+        { "kind": "condition", "field": "price", "operator": "gte", "value": 12.5 },
+        { "kind": "condition", "field": "qty", "operator": "eq", "value": 0 },
+        { "kind": "condition", "field": "active", "operator": "eq", "value": true },
+        { "kind": "condition", "field": "code", "operator": "eq", "value": "007" }
+      ] },
+      "parsed": "and(price gte 12.5, qty eq 0, active eq true, code eq 007)"
+    }
+  ]
+}
