@@ -2,7 +2,8 @@
 
 ## `options.Column(field)`
 
-A fluent, per-column allow-list. A column left unconfigured keeps the permissive defaults.
+A fluent, per-column allow-list. A column left unconfigured keeps the permissive defaults —
+unless `o.AllowUnconfiguredFields = false`, in which case **only** configured columns are honoured.
 
 ```csharp
 _products.ToInanduGrid(qs, o =>
@@ -30,6 +31,20 @@ the `groupBy` level (and its `groupKeys` entry) is dropped, a distinct request r
 and the aggregate is left out.
 An unknown group / distinct field is handled the same way, instead of throwing `ArgumentException`.
 
+### Deny by default — `o.AllowUnconfiguredFields = false`
+
+By default any public property of the row type — including dotted navigation paths like
+`customer.email` — can be filtered, sorted, grouped, listed and aggregated, and free-text search
+covers every public `string` property. That's convenient for internal tools, but on a public
+endpoint it lets a client probe fields you never meant to expose (watch `total` change while
+guessing `passwordHash_startsWith=…`). This applies to the `ToInanduGrid(selector, …)` overloads
+too: they filter on the *source* entity, not the DTO.
+
+With `AllowUnconfiguredFields = false`, a field with no `o.Column(...)` entry is treated like a
+`.NotFilterable().Sortable(false)` column (dropped, or rejected with `ThrowOnUnknownField`), and
+free-text search covers only `SearchableFields` plus columns marked `.Searchable()`. A `FieldMap`
+entry alone doesn't count as configured — use `o.Column("x").Path("X.Y")`.
+
 `SearchableFields` and the per-column `Searchable(...)` overrides combine: columns forced *in* are
 added, columns forced *out* are removed.
 
@@ -43,8 +58,6 @@ catch (InanduGridRequestException ex)
     return Results.ValidationProblem(ex.Errors); // { "filter.price": ["Filtering 'price' with 'eq' is not allowed."] }
 }
 ```
-
-The `MapInanduGrid*` helpers from `Inandu.Grid.Extensions.AspNetCore` do this for you.
 
 ## `options.Limits` — the cost guard
 
