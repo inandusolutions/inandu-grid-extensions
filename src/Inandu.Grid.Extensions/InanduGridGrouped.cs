@@ -80,6 +80,7 @@ public static class InanduGridGroupedExtensions
         options ??= new InanduGridOptions();
         var request = options.Request ?? new InanduGridRequest();
         RequestGuard.Enforce(request, options);
+        GroupGuard.EnforceGroupBy(request, options, typeof(T));
         var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
