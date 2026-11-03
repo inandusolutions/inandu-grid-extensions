@@ -6,7 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-_Nothing yet — see [0.4.0](#040---2026-10-14) for the latest release._
+### Fixed
+
+- `MapInanduGrid`, `MapInanduGridGrouped` and `MapInanduGridDistinct` now return `400` with a
+  `ValidationProblemDetails` body when the request is rejected (`ThrowOnUnknownField`, or a
+  `Limits` cap with `OnLimitExceeded = Reject`), instead of letting `InanduGridRequestException`
+  escape as an HTTP 500. The endpoints also declare `ProducesValidationProblem()` for OpenAPI.
+- `MapInanduGridDistinct` without a field now answers with the same `ValidationProblemDetails` shape
+  (`errors.field`) instead of an ad-hoc `{ "error": "…" }` body.
 
 ## [0.4.0] - 2026-10-14
 
