@@ -51,6 +51,26 @@ public sealed class InanduGridOptions
     /// </summary>
     public bool ThrowOnUnknownField { get; set; }
 
+    /// <summary>
+    /// Whether a field with no <see cref="Column"/> configuration may be used by the client.
+    /// <c>true</c> (the default) keeps the permissive behaviour: any public property of the row type
+    /// — including dotted navigation paths such as <c>customer.email</c> — can be filtered, sorted,
+    /// grouped, listed as distinct values and aggregated, and free-text search covers every public
+    /// <see cref="string"/> property. Set it to <c>false</c> for a deny-by-default endpoint: only
+    /// fields declared with <c>o.Column("field")</c> are honoured, and free-text search covers only
+    /// <see cref="SearchableFields"/> plus columns marked <c>.Searchable()</c>.
+    /// <para>
+    /// Recommended for any endpoint whose row type has properties the client must not query —
+    /// including the <c>ToInanduGrid(selector, …)</c> overloads, which filter and sort on the
+    /// <em>source</em> entity, not on the projected DTO.
+    /// </para>
+    /// <para>
+    /// Only <see cref="Column"/> entries count as configured; a <see cref="FieldMap"/> entry alone
+    /// does not (use <c>o.Column("customer").Path("Customer.Name")</c> instead).
+    /// </para>
+    /// </summary>
+    public bool AllowUnconfiguredFields { get; set; } = true;
+
     /// <summary>Culture used to coerce filter operand strings to numbers / dates. Default <see cref="CultureInfo.InvariantCulture"/>.</summary>
     public CultureInfo Culture { get; set; } = CultureInfo.InvariantCulture;
 
@@ -117,13 +137,20 @@ public sealed class InanduGridOptions
         return field;
     }
 
-    /// <summary><c>true</c> when <paramref name="op"/> is allowed on <paramref name="field"/> (no column config ⇒ any operator).</summary>
+    /// <summary><c>true</c> when <paramref name="op"/> is allowed on <paramref name="field"/> (no column config ⇒ <see cref="AllowUnconfiguredFields"/>).</summary>
     internal bool IsFilterAllowed(string field, FilterOperator op)
-        => FindColumn(field) is not { } column || column.Allows(op);
+        => FindColumn(field) is { } column ? column.Allows(op) : AllowUnconfiguredFields;
 
     /// <summary><c>true</c> when sorting on <paramref name="field"/> is allowed.</summary>
     internal bool IsSortAllowed(string field)
-        => FindColumn(field) is not { } column || column.CanSort;
+        => FindColumn(field) is { } column ? column.CanSort : AllowUnconfiguredFields;
+
+    /// <summary>
+    /// <c>true</c> when the client may read <paramref name="field"/>'s values through the advanced
+    /// filter, <c>groupBy</c>, distinct values or an aggregate — i.e. the column is filterable.
+    /// </summary>
+    internal bool IsValueAccessAllowed(string field)
+        => FindColumn(field) is { } column ? column.CanFilter : AllowUnconfiguredFields;
 
     /// <summary>The fields free-text search runs against, honouring per-column <c>Searchable(...)</c> overrides.</summary>
     internal List<string>? EffectiveSearchableFields(Func<List<string>> stringPropertyFallback)
@@ -133,7 +160,8 @@ public sealed class InanduGridOptions
             Columns.Values.Where(c => c.Searchable == false).Select(c => c.Field),
             StringComparer.OrdinalIgnoreCase);
 
-        var baseline = SearchableFields ?? (forcedIn.Count > 0 ? new List<string>() : stringPropertyFallback());
+        var baseline = SearchableFields
+            ?? (forcedIn.Count > 0 || !AllowUnconfiguredFields ? new List<string>() : stringPropertyFallback());
         var result = baseline.Concat(forcedIn).Where(f => !forcedOut.Contains(f)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         return result;
     }

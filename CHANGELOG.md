@@ -16,6 +16,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `aggregate=` (`min` / `max` / `sum` / `avg` / `count` on a field) honours `CanFilter` too, so the
   aggregate row can't reveal a `.NotFilterable()` column's values. `count:*` is unaffected.
 
+### Added
+
+- `InanduGridOptions.AllowUnconfiguredFields` (default `true`). Set it to `false` for a
+  deny-by-default endpoint: only fields declared with `o.Column(...)` can be filtered, sorted,
+  grouped, listed as distinct values or aggregated, and free-text search covers only
+  `SearchableFields` plus `.Searchable()` columns. Recommended for public endpoints and for the
+  `ToInanduGrid(selector, …)` overloads, which query the source entity rather than the DTO.
+
 ### Fixed
 
 - An unknown `groupBy` or distinct field no longer throws `ArgumentException` (an HTTP 500 from the

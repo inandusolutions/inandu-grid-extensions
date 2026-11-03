@@ -42,7 +42,7 @@ internal static class AggregateBuilder
 
             // min / max / sum reveal a column's values, so aggregates follow CanFilter like
             // grouping and distinct do.
-            if (options.FindColumn(agg.Field) is { CanFilter: false })
+            if (!options.IsValueAccessAllowed(agg.Field))
             {
                 if (options.ThrowOnUnknownField)
                 {

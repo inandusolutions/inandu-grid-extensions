@@ -170,6 +170,21 @@ db.Orders.ToInanduGrid(
     cfg => cfg.FieldMap = new() { ["customer"] = "Customer.Name" }); // filter/sort by Customer.Name
 ```
 
+> **The DTO limits what's returned, not what's queryable.** Sorting and filtering run on the
+> *entity*, and by default any public property is accepted — including dotted navigation paths and
+> fields the DTO leaves out. A client could send `passwordHash_startsWith=a` and watch `total`
+> change. For anything public-facing, declare the columns and deny the rest:
+>
+> ```csharp
+> cfg =>
+> {
+>     cfg.AllowUnconfiguredFields = false;          // only the columns below are honoured
+>     cfg.Column("reference").Searchable();
+>     cfg.Column("customer").Path("Customer.Name").Searchable();
+>     cfg.Column("total").Filterable(FilterOperator.GreaterThanOrEqual, FilterOperator.LessThanOrEqual);
+> }
+> ```
+
 ## Advanced filter (nested AND / OR)
 
 `@inandu-solutions/grid-pro`'s query builder can serialise its tree with `advancedQueryToRestParams`
