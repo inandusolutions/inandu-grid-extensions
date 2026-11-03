@@ -212,7 +212,7 @@ internal static class ExpressionBuilder
 
         var condition = (AdvancedFilterCondition)node;
 
-        if (options.FindColumn(condition.Field) is { CanFilter: false })
+        if (!options.IsValueAccessAllowed(condition.Field))
         {
             if (options.ThrowOnUnknownField)
             {

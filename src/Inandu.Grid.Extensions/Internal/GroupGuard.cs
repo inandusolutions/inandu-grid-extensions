@@ -68,7 +68,7 @@ internal static class GroupGuard
             return $"A {noun} field must not be blank.";
         }
 
-        if (options.FindColumn(field) is { CanFilter: false })
+        if (!options.IsValueAccessAllowed(field))
         {
             return $"{verb} '{field}' is not allowed.";
         }

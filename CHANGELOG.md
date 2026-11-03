@@ -6,7 +6,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-_Nothing yet_
+### Added
+
+- `InanduGridOptions.AllowUnconfiguredFields` (default `true`). Set it to `false` for a
+  deny-by-default endpoint: only fields declared with `o.Column(...)` can be filtered, sorted,
+  grouped, listed as distinct values or aggregated, and free-text search covers only
+  `SearchableFields` plus `.Searchable()` columns. Recommended for public endpoints and for the
+  `ToInanduGrid(selector, …)` overloads, which query the source entity rather than the DTO.
 
 ## [0.4.1] - 2026-11-03
 
