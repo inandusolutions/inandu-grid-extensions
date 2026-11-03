@@ -44,6 +44,8 @@ catch (InanduGridRequestException ex)
 }
 ```
 
+The `MapInanduGrid*` helpers from `Inandu.Grid.Extensions.AspNetCore` do this for you.
+
 ## `options.Limits` — the cost guard
 
 Caps on how large / deep an incoming request may be. `options.OnLimitExceeded` decides what happens
