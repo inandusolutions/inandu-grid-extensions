@@ -96,10 +96,10 @@ public static class InanduGridEntityFrameworkExtensions
 
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
         var sortedProjected = ExpressionBuilder.ApplySort(filtered, request.Sort, options).Select(selector);
-        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize, skip) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         var total = options.IncludeTotal ? await filtered.CountAsync(cancellationToken).ConfigureAwait(false) : -1;
-        var rows = await InanduGridQueryableExtensions.Paginate(sortedProjected, page, pageSize)
+        var rows = await InanduGridQueryableExtensions.Paginate(sortedProjected, skip, pageSize)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         return new InanduGridResult<TResult>(rows, total, page, pageSize)
@@ -140,7 +140,7 @@ public static class InanduGridEntityFrameworkExtensions
         var request = options.Request ?? new InanduGridRequest();
         RequestGuard.Enforce(request, options);
         GroupGuard.EnforceGroupBy(request, options, typeof(T));
-        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize, skip) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
 
@@ -165,7 +165,7 @@ public static class InanduGridEntityFrameworkExtensions
         {
             var sorted = ExpressionBuilder.ApplySort(filtered, request.Sort, options);
             var rowTotal = await sorted.CountAsync(cancellationToken).ConfigureAwait(false);
-            var rows = await InanduGridQueryableExtensions.Paginate(sorted, page, pageSize)
+            var rows = await InanduGridQueryableExtensions.Paginate(sorted, skip, pageSize)
                 .ToListAsync(cancellationToken).ConfigureAwait(false);
 
             return new InanduGridGroupedResult<T>
@@ -180,7 +180,7 @@ public static class InanduGridEntityFrameworkExtensions
         }
 
         var groupSort = request.Sort.Count > 0 ? request.Sort[0] : null;
-        var (groups, groupTotal) = await GroupLevelAsync(filtered, request.GroupBy[level], options, page, pageSize, groupSort, cancellationToken)
+        var (groups, groupTotal) = await GroupLevelAsync(filtered, request.GroupBy[level], options, skip, pageSize, groupSort, cancellationToken)
             .ConfigureAwait(false);
 
         return new InanduGridGroupedResult<T>
@@ -228,7 +228,7 @@ public static class InanduGridEntityFrameworkExtensions
         var request = options.Request ?? new InanduGridRequest();
         RequestGuard.Enforce(request, options);
 
-        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize, skip) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
         if (!GroupGuard.IsDistinctAllowed(field, options, typeof(T)))
         {
             return new InanduGridDistinctResult { Field = field, Page = page, PageSize = pageSize };
@@ -237,7 +237,7 @@ public static class InanduGridEntityFrameworkExtensions
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
         var order = request.Sort.Count > 0 ? request.Sort[0] : null;
 
-        var (groups, total) = await GroupLevelAsync(filtered, field, options, page, pageSize, order, cancellationToken).ConfigureAwait(false);
+        var (groups, total) = await GroupLevelAsync(filtered, field, options, skip, pageSize, order, cancellationToken).ConfigureAwait(false);
 
         return new InanduGridDistinctResult
         {
@@ -255,7 +255,7 @@ public static class InanduGridEntityFrameworkExtensions
         => source.ToInanduGridDistinctAsync(field, InanduGridOptions.FromQueryString(queryString, configure), cancellationToken);
 
     internal static Task<(List<InanduGridGroup> Groups, int Total)> GroupLevelAsync<T>(
-        IQueryable<T> source, string field, InanduGridOptions options, int page, int pageSize, InanduGridSort? groupSort, CancellationToken ct)
+        IQueryable<T> source, string field, InanduGridOptions options, int skip, int pageSize, InanduGridSort? groupSort, CancellationToken ct)
     {
         var param = Expression.Parameter(typeof(T), "x");
         var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(field))
@@ -270,11 +270,11 @@ public static class InanduGridEntityFrameworkExtensions
 
         return (Task<(List<InanduGridGroup>, int)>)core.Invoke(
             null,
-            new object?[] { source, keySelector, field, page, pageSize, groupSort, ct })!;
+            new object?[] { source, keySelector, field, skip, pageSize, groupSort, ct })!;
     }
 
     private static async Task<(List<InanduGridGroup> Groups, int Total)> GroupLevelAsyncCore<T, TKey>(
-        IQueryable<T> source, Expression<Func<T, TKey>> keySelector, string field, int page, int pageSize, InanduGridSort? groupSort, CancellationToken ct)
+        IQueryable<T> source, Expression<Func<T, TKey>> keySelector, string field, int skip, int pageSize, InanduGridSort? groupSort, CancellationToken ct)
     {
         var grouped = source.GroupBy(keySelector).Select(g => new GroupCount<TKey> { Key = g.Key, Count = g.Count() });
 
@@ -291,8 +291,7 @@ public static class InanduGridEntityFrameworkExtensions
             _ => grouped.OrderBy(x => x.Key),
         };
 
-        var skip = Math.Max(0, page - 1) * (long)pageSize;
-        var pageRows = await ordered.Skip((int)Math.Min(skip, int.MaxValue)).Take(pageSize)
+        var pageRows = await ordered.Skip(skip).Take(pageSize)
             .ToListAsync(ct).ConfigureAwait(false);
 
         var groups = pageRows

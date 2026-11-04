@@ -30,9 +30,12 @@ the usual reason to choose keyset.
 - **`sort` is the cursor.** Every request in a keyset sequence must send the *same* `sort`.
 - **Include a unique tie-breaker** as the last sort column (`,id`) — otherwise rows sharing the
   leading key can be skipped or repeated at a page boundary.
-- Sort keys must be **orderable** (numbers, strings, dates, enums) and **non-null** on the boundary
-  row. A null key, an unparseable cursor, or a `bool`/`Guid` sort key → the request transparently
-  falls back to offset paging (you still get a `nextCursor` to continue with).
+- Sort keys must be **orderable** (numbers, strings, dates, enums). A `bool`/`Guid` sort key or an
+  unparseable cursor falls back to offset paging. When the **boundary row's key is null** a seek is
+  impossible, so the `nextCursor` becomes an offset cursor (`{"s":N}`, still opaque to you) that resumes
+  right after the rows already returned; following it always moves forward, and the sequence switches back to
+  seeking as soon as a boundary key is non-null. This relies on the requests of one sequence being
+  sequential with the same `sort` and filters.
 - Multi-column sort builds a compound seek:
   `f1 <dir> v1  OR  (f1 = v1 AND f2 <dir> v2)  OR  …`.
 - Over EF Core the seek is plain SQL; make sure the sort columns are indexed.

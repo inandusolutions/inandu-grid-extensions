@@ -36,6 +36,15 @@ public sealed class InanduGridLimits
 
     /// <summary>Maximum number of <c>aggregate</c> functions. Default 20.</summary>
     public int MaxAggregations { get; set; } = 20;
+
+    /// <summary>Maximum length of the free-text <c>q</c> search. Over EF Core it becomes a <c>LIKE '%…%'</c> on every searchable column, so long text is expensive. Default 200.</summary>
+    public int MaxQueryTextLength { get; set; } = 200;
+
+    /// <summary>Maximum length of the advanced <c>filter</c> JSON. Default 20000.</summary>
+    public int MaxFilterLength { get; set; } = 20_000;
+
+    /// <summary>Maximum length of a raw query string given to <see cref="InanduGridOptions.FromQueryString"/>, checked before it is split and parsed. Default 32768.</summary>
+    public int MaxQueryStringLength { get; set; } = 32_768;
 }
 
 /// <summary>

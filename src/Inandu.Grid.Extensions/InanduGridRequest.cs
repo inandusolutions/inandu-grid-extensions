@@ -75,7 +75,10 @@ public sealed class InanduGridRequest
         set
         {
             _filterJson = value;
-            _advancedFilter = AdvancedFilterJson.Parse(value);
+
+            // Past this size the JSON is not even parsed; the guard then rejects or drops it
+            // (InanduGridLimits.MaxFilterLength) before it can cost anything.
+            _advancedFilter = value is { Length: > MaxParsedFilterLength } ? null : AdvancedFilterJson.Parse(value);
         }
     }
 
@@ -145,7 +148,13 @@ public sealed class InanduGridRequest
     }
 
     /// <summary>The effective (1-based) page and page size, resolving <see cref="Offset"/> / <see cref="Limit"/>.</summary>
-    internal (int Page, int PageSize) ResolvePaging(int defaultPageSize, int maxPageSize)
+    /// <summary>
+    /// Resolves the page window. <c>Skip</c> is the exact number of rows to skip: with
+    /// <c>offset</c>/<c>limit</c> it is the offset itself, so a block cache whose offsets are not
+    /// multiples of the limit still gets rows <c>[offset, offset + limit)</c>. <c>Page</c> is the
+    /// 1-based page the window falls in (for the result's metadata).
+    /// </summary>
+    internal (int Page, int PageSize, int Skip) ResolvePaging(int defaultPageSize, int maxPageSize)
     {
         int size;
         int page;
@@ -153,13 +162,15 @@ public sealed class InanduGridRequest
         if (Offset is int offset && Limit is int limit && limit > 0)
         {
             size = Clamp(limit, 1, maxPageSize);
-            page = offset <= 0 ? 1 : (offset / size) + 1;
-            return (page, size);
+            var skipRows = offset <= 0 ? 0 : offset;
+            page = (skipRows / size) + 1;
+            return (page, size, skipRows);
         }
 
         size = PageSize is int ps && ps > 0 ? Clamp(ps, 1, maxPageSize) : Clamp(defaultPageSize, 1, maxPageSize);
         page = Page is int p && p > 0 ? p : 1;
-        return (page, size);
+        var skip = (page - 1) * (long)size;
+        return (page, size, (int)Math.Min(skip, int.MaxValue));
     }
 
     private static int Clamp(int value, int min, int max) => value < min ? min : value > max ? max : value;
@@ -340,6 +351,8 @@ public sealed class InanduGridRequest
     private static int? ParseInt(string value)
         => int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : null;
 
+    private const int MaxParsedFilterLength = 262_144;
+
     private static IEnumerable<KeyValuePair<string, string?>> SplitQueryString(string? queryString)
     {
         if (string.IsNullOrEmpty(queryString))
@@ -360,11 +373,11 @@ public sealed class InanduGridRequest
             var eq = part.IndexOf('=');
             if (eq < 0)
             {
-                yield return new KeyValuePair<string, string?>(Uri.UnescapeDataString(part), string.Empty);
+                yield return new KeyValuePair<string, string?>(Uri.UnescapeDataString(part.Replace('+', ' ')), string.Empty);
             }
             else
             {
-                var name = Uri.UnescapeDataString(part.Substring(0, eq));
+                var name = Uri.UnescapeDataString(part.Substring(0, eq).Replace('+', ' '));
                 var value = Uri.UnescapeDataString(part.Substring(eq + 1).Replace('+', ' '));
                 yield return new KeyValuePair<string, string?>(name, value);
             }

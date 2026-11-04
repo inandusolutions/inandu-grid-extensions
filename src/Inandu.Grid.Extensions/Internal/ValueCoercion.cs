@@ -106,7 +106,7 @@ internal static class ValueCoercion
 
             if (IsNumeric(type))
             {
-                if (decimal.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, formatProvider, out var dec))
+                if (decimal.TryParse(text, NumberStyles.Float, formatProvider, out var dec))
                 {
                     result = Convert.ChangeType(dec, type, formatProvider);
                     return true;

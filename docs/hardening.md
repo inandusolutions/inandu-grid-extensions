@@ -51,6 +51,12 @@ Silent is friendlier to stale clients; strict is easier to debug and to test. Pi
 | `Limits.MaxInListItems` | 500 | items in one `in` list |
 | `Limits.MaxGroupByLevels` | 5 | `groupBy` levels |
 | `Limits.MaxAggregations` | 20 | `aggregate` functions |
+| `Limits.MaxQueryTextLength` | 200 | length of the free-text `q` search |
+| `Limits.MaxFilterLength` | 20000 | length of the advanced `filter` JSON |
+| `Limits.MaxQueryStringLength` | 32768 | raw query string given to `FromQueryString`, checked before parsing |
+
+The `MapInanduGrid*` helpers also log a warning, once per mapped endpoint, when it keeps the permissive
+default (`AllowUnconfiguredFields = true`): see section 1.
 
 `OnLimitExceeded` is `Trim` (default: cut the request down) or `Reject` (throw, which the `MapInanduGrid*`
 helpers turn into a `400`). On a public endpoint, lower these to what your UI actually needs.

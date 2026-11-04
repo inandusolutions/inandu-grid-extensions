@@ -86,3 +86,65 @@ public class KeysetTests
         Assert.Equal(Enumerable.Range(1, 10), result.Data.Select(p => p.Id));
     }
 }
+
+/// <summary>A null sort key at a page boundary can't be sought past; the cursor must still advance.</summary>
+public class KeysetNullBoundaryTests
+{
+    // 60 rows; the first 12 have no Sku (they sort first), the rest have unique ones.
+    private static List<Product> Rows => Enumerable.Range(1, 60)
+        .Select(i => new Product { Id = i, Name = $"P{i}", Sku = i <= 12 ? null : $"SKU-{i:D3}" })
+        .ToList();
+
+    private static List<int> Walk(string sort, int pageSize)
+    {
+        var seen = new List<int>();
+        string? cursor = null;
+
+        for (var guard = 0; guard < 100; guard++)
+        {
+            var qs = $"?pageSize={pageSize}&sort={sort}" + (cursor is null ? "" : $"&after={cursor}");
+            var page = Rows.ToInanduGrid(qs, o => o.EnableKeyset = true);
+            seen.AddRange(page.Data.Select(p => p.Id));
+
+            if (page.HasMore != true)
+            {
+                return seen;
+            }
+
+            cursor = page.NextCursor;
+            Assert.NotNull(cursor);
+        }
+
+        Assert.Fail("The keyset loop did not terminate.");
+        return seen;
+    }
+
+    [Fact]
+    public void Following_cursors_across_null_sort_keys_terminates_and_visits_each_row_once()
+    {
+        var seen = Walk("sku,id", 5);
+
+        Assert.Equal(60, seen.Count);
+        Assert.Equal(60, seen.Distinct().Count());
+    }
+
+    [Fact]
+    public void Descending_sort_with_null_keys_also_terminates()
+    {
+        var seen = Walk("-sku,id", 7);
+
+        Assert.Equal(60, seen.Distinct().Count());
+    }
+
+    [Fact]
+    public void An_old_array_form_cursor_is_still_accepted()
+    {
+        var first = Sample.Many(50).ToInanduGrid("?pageSize=10&sort=id", o => o.EnableKeyset = true);
+        var legacy = Inandu.Grid.Extensions.Internal.KeysetCursor.Encode(new object?[] { 10 });
+
+        var next = Sample.Many(50).ToInanduGrid($"?pageSize=10&sort=id&after={legacy}");
+
+        Assert.NotNull(first.NextCursor);
+        Assert.Equal(Enumerable.Range(11, 10), next.Data.Select(p => p.Id));
+    }
+}
