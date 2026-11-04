@@ -34,9 +34,16 @@ internal static class ExpressionBuilder
 
     // ── sorting ────────────────────────────────────────────────────────────
 
-    public static IQueryable<T> ApplySort<T>(IQueryable<T> source, IEnumerable<InanduGridSort> sorts, InanduGridOptions options)
+    /// <summary>
+    /// The sort criteria that will actually be applied: blank ones are dropped, and so are the ones
+    /// the options disallow or that don't resolve to a property (or the call throws, with
+    /// <see cref="InanduGridOptions.ThrowOnUnknownField"/>). Everything that consumes the sort list
+    /// (ordering, keyset seek, the next cursor) must use this list, never the raw request, so a field
+    /// the options hide can't leak through a cursor.
+    /// </summary>
+    public static IReadOnlyList<InanduGridSort> EffectiveSorts<T>(IEnumerable<InanduGridSort> sorts, InanduGridOptions options)
     {
-        var applied = false;
+        var effective = new List<InanduGridSort>();
 
         foreach (var sort in sorts)
         {
@@ -56,8 +63,7 @@ internal static class ExpressionBuilder
             }
 
             var param = Expression.Parameter(typeof(T), "x");
-            var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(sort.Field));
-            if (resolved is null)
+            if (PropertyResolver.Resolve(param, typeof(T), options.MapField(sort.Field)) is null)
             {
                 if (options.ThrowOnUnknownField)
                 {
@@ -66,6 +72,21 @@ internal static class ExpressionBuilder
 
                 continue;
             }
+
+            effective.Add(sort);
+        }
+
+        return effective;
+    }
+
+    public static IQueryable<T> ApplySort<T>(IQueryable<T> source, IEnumerable<InanduGridSort> sorts, InanduGridOptions options)
+    {
+        var applied = false;
+
+        foreach (var sort in EffectiveSorts<T>(sorts, options))
+        {
+            var param = Expression.Parameter(typeof(T), "x");
+            var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(sort.Field))!;
 
             var (access, keyType) = resolved.Value;
             var keySelector = Expression.Lambda(access, param);
@@ -188,6 +209,23 @@ internal static class ExpressionBuilder
         return body is null ? null : Expression.Lambda<Func<T, bool>>(body, param);
     }
 
+    /// <summary>The flat-filter operators an advanced-filter operator needs the column to allow.</summary>
+    private static FilterOperator[] RequiredOperators(AdvancedFilterOperator op) => op switch
+    {
+        AdvancedFilterOperator.Eq or AdvancedFilterOperator.IsTrue or AdvancedFilterOperator.IsFalse or AdvancedFilterOperator.IsEmpty
+            => new[] { FilterOperator.Equal },
+        AdvancedFilterOperator.Neq or AdvancedFilterOperator.IsNotEmpty => new[] { FilterOperator.NotEqual },
+        AdvancedFilterOperator.Contains or AdvancedFilterOperator.NotContains => new[] { FilterOperator.Contains },
+        AdvancedFilterOperator.StartsWith => new[] { FilterOperator.StartsWith },
+        AdvancedFilterOperator.EndsWith => new[] { FilterOperator.EndsWith },
+        AdvancedFilterOperator.Gt => new[] { FilterOperator.GreaterThan },
+        AdvancedFilterOperator.Gte => new[] { FilterOperator.GreaterThanOrEqual },
+        AdvancedFilterOperator.Lt => new[] { FilterOperator.LessThan },
+        AdvancedFilterOperator.Lte => new[] { FilterOperator.LessThanOrEqual },
+        AdvancedFilterOperator.Between => new[] { FilterOperator.GreaterThanOrEqual, FilterOperator.LessThanOrEqual },
+        _ => Array.Empty<FilterOperator>(),
+    };
+
     private static Expression? BuildAdvancedNode(AdvancedFilterNode node, ParameterExpression param, Type rootType, InanduGridOptions options)
     {
         if (node is AdvancedFilterGroup group)
@@ -220,6 +258,21 @@ internal static class ExpressionBuilder
             }
 
             return null;
+        }
+
+        // A column restricted with Filterable(...) to some operators keeps that restriction here too:
+        // the advanced filter must not open operators the flat {field}_{op} parameters refuse.
+        foreach (var required in RequiredOperators(condition.Operator))
+        {
+            if (!options.IsFilterAllowed(condition.Field, required))
+            {
+                if (options.ThrowOnUnknownField)
+                {
+                    throw InanduGridRequestException.Single($"filter.{condition.Field}", $"Filtering '{condition.Field}' with '{required.ToToken()}' is not allowed.");
+                }
+
+                return null;
+            }
         }
 
         var resolved = PropertyResolver.Resolve(param, rootType, options.MapField(condition.Field));
