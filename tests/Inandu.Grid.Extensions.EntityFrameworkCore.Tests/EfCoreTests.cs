@@ -34,20 +34,72 @@ public sealed class ShopContext : DbContext
     public ShopContext(DbContextOptions<ShopContext> options) : base(options) { }
 
     public DbSet<Widget> Widgets => Set<Widget>();
+
+    // The seed assigns ids itself; without this SQL Server makes `Id` an IDENTITY column and rejects them.
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+        => modelBuilder.Entity<Widget>().Property(w => w.Id).ValueGeneratedNever();
 }
 
-/// <summary>One shared in-memory SQLite database, seeded once.</summary>
+/// <summary>
+/// One shared database, seeded once. SQLite in memory by default; set <c>INANDU_TEST_PROVIDER</c> to
+/// <c>sqlserver</c> or <c>postgres</c> and <c>INANDU_TEST_CONNECTION</c> to a server-level connection
+/// string (a user that can create databases) to run the same tests against a real server. Each fixture
+/// creates its own throw-away database and drops it on dispose.
+/// </summary>
 public sealed class ShopFixture : IDisposable
 {
-    private readonly DbConnection _connection;
+    private readonly DbConnection? _connection;
+    private readonly Action? _cleanup;
 
     public ShopFixture()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
+        var provider = (Environment.GetEnvironmentVariable("INANDU_TEST_PROVIDER") ?? "sqlite").ToLowerInvariant();
+        var server = Environment.GetEnvironmentVariable("INANDU_TEST_CONNECTION");
+        var dbName = "inandu_" + Guid.NewGuid().ToString("N");
 
-        var options = new DbContextOptionsBuilder<ShopContext>().UseSqlite(_connection).Options;
-        using var db = new ShopContext(options);
+        switch (provider)
+        {
+            case "sqlite":
+                _connection = new SqliteConnection("DataSource=:memory:");
+                _connection.Open();
+                OptionsBuilder = new DbContextOptionsBuilder<ShopContext>().UseSqlite(_connection).Options;
+                break;
+
+            case "sqlserver":
+            {
+                var admin = RequireConnection(server, provider);
+                Execute(() => new Microsoft.Data.SqlClient.SqlConnection(admin), $"CREATE DATABASE [{dbName}]");
+                var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(admin) { InitialCatalog = dbName };
+                OptionsBuilder = new DbContextOptionsBuilder<ShopContext>().UseSqlServer(builder.ConnectionString).Options;
+                _cleanup = () =>
+                {
+                    Microsoft.Data.SqlClient.SqlConnection.ClearAllPools();
+                    Execute(() => new Microsoft.Data.SqlClient.SqlConnection(admin), $"DROP DATABASE [{dbName}]");
+                };
+                break;
+            }
+
+            case "postgres":
+            {
+                // Seed timestamps are DateTimeKind.Unspecified; keep Npgsql's pre-6 behaviour so they map to `timestamp`.
+                AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+                var admin = RequireConnection(server, provider);
+                Execute(() => new Npgsql.NpgsqlConnection(admin), $"CREATE DATABASE \"{dbName}\"");
+                var builder = new Npgsql.NpgsqlConnectionStringBuilder(admin) { Database = dbName };
+                OptionsBuilder = new DbContextOptionsBuilder<ShopContext>().UseNpgsql(builder.ConnectionString).Options;
+                _cleanup = () =>
+                {
+                    Npgsql.NpgsqlConnection.ClearAllPools();
+                    Execute(() => new Npgsql.NpgsqlConnection(admin), $"DROP DATABASE \"{dbName}\" WITH (FORCE)");
+                };
+                break;
+            }
+
+            default:
+                throw new InvalidOperationException($"Unknown INANDU_TEST_PROVIDER '{provider}' (sqlite, sqlserver, postgres).");
+        }
+
+        using var db = new ShopContext(OptionsBuilder);
         db.Database.EnsureCreated();
 
         db.Widgets.AddRange(Enumerable.Range(1, 240).Select(i => new Widget
@@ -62,15 +114,31 @@ public sealed class ShopFixture : IDisposable
             CreatedOn = new DateTime(2026, 1, 1).AddHours(i),
         }));
         db.SaveChanges();
-
-        OptionsBuilder = options;
     }
 
     public DbContextOptions<ShopContext> OptionsBuilder { get; }
 
     public ShopContext NewContext() => new(OptionsBuilder);
 
-    public void Dispose() => _connection.Dispose();
+    public void Dispose()
+    {
+        _connection?.Dispose();
+        _cleanup?.Invoke();
+    }
+
+    private static string RequireConnection(string? connection, string provider)
+        => string.IsNullOrWhiteSpace(connection)
+            ? throw new InvalidOperationException($"INANDU_TEST_CONNECTION must be set to run against '{provider}'.")
+            : connection;
+
+    private static void Execute(Func<DbConnection> open, string sql)
+    {
+        using var connection = open();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.ExecuteNonQuery();
+    }
 }
 
 public class EfCoreTests : IClassFixture<ShopFixture>
