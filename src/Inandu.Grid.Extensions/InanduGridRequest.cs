@@ -23,7 +23,7 @@ public sealed class InanduGridRequest
         "sort", "orderby", "order",
         "q", "query", "search", "term",
         "filter", "advancedfilter",
-        "groupby", "groupkeys",
+        "groupby", "groupkeys", "groupkeysencoding", "inencoding",
         "aggregate", "aggregates", "after", "cursor",
         "_", "t", "_t",
     };
@@ -201,6 +201,10 @@ public sealed class InanduGridRequest
         var repeatedGroupKeys = all.Any(p => KeyIs(p.Key ?? string.Empty, "groupKeysEncoding")
             && string.Equals(p.Value?.Trim(), "repeat", StringComparison.OrdinalIgnoreCase));
 
+        var repeatedIn = all.Any(p => KeyIs(p.Key ?? string.Empty, "inEncoding")
+            && string.Equals(p.Value?.Trim(), "repeat", StringComparison.OrdinalIgnoreCase));
+        var repeatedInValues = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var (key, rawValue) in all)
         {
             if (string.IsNullOrEmpty(key))
@@ -299,6 +303,27 @@ public sealed class InanduGridRequest
                     request.After = value;
                 }
             }
+            else if (KeyIs(key, "inEncoding"))
+            {
+                // A marker read in the first pass above, not a filter.
+            }
+            else if (key.Length > "_none".Length && key.EndsWith("_none", StringComparison.OrdinalIgnoreCase))
+            {
+                // `{field}_none`: an explicitly empty set filter - match no rows. (`in` with no values
+                // can't say this: it is dropped as "no constraint".)
+                request.Conditions.Add(new FilterCondition(key.Substring(0, key.Length - "_none".Length), FilterOperator.In, new List<string>()));
+            }
+            else if (repeatedIn && key.Length > "_in".Length && key.EndsWith("_in", StringComparison.OrdinalIgnoreCase))
+            {
+                // One value per occurrence, taken as-is: commas, empty values and padding survive.
+                var inField = key.Substring(0, key.Length - "_in".Length);
+                if (!repeatedInValues.TryGetValue(inField, out var list))
+                {
+                    repeatedInValues[inField] = list = new List<string>();
+                }
+
+                list.Add(value);
+            }
             else if (!ReservedKeys.Contains(key))
             {
                 var condition = ParseConditionKey(key, value);
@@ -307,6 +332,11 @@ public sealed class InanduGridRequest
                     request.Conditions.Add(condition);
                 }
             }
+        }
+
+        foreach (var (field, values) in repeatedInValues)
+        {
+            request.Conditions.Add(new FilterCondition(field, FilterOperator.In, values));
         }
 
         return request;

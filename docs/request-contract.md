@@ -77,6 +77,18 @@ Flat form — one param per condition, key is `{field}_{operator}`:
 | `lte` (`le`) | less than or equal | `createdOn_lte=2026-06-30` |
 | `in` | one of a comma list | `status_in=Active,Draft` |
 
+**Values with commas, and the empty set.** `in` splits on commas, so a value such as `Smith, John` can't be
+sent that way. Add `inEncoding=repeat` and repeat the param, **one value per occurrence, taken exactly as is**
+(commas, empty values and padding survive):
+
+```
+GET ...?name_in=Smith, John&name_in=Ann&inEncoding=repeat
+```
+
+`{field}_none=1` is the explicitly empty set (a set filter with nothing ticked): it matches **no rows**,
+whereas `{field}_in=` with no values is no constraint. Clients that talk to an older server send the repeat
+form only when a value needs it.
+
 `field` may be a **dotted path** (`customer.name_contains=ann`), or a grid alias resolved through
 `InanduGridOptions.FieldMap`. The operator is the segment after the **last** `_`; a key whose
 suffix isn't a known operator is ignored (so `created_on=…` is not mistaken for a filter).
@@ -94,7 +106,8 @@ When you bind a JSON body, each column's control value (mirroring the core
 | `from` | `gte` |
 | `to` | `lte` |
 | `bool: "true"` / `"false"` | `eq true` / `eq false` |
-| `values: [...]` (non-empty) | `in` — takes over the column; an empty array is *no constraint* |
+| `values: [...]` (non-empty) | `in` — takes over the column (`inEncoding=repeat` when a value has a comma, is empty or padded) |
+| `values: []` | `{field}_none=1` — matches no rows (nothing ticked) |
 
 ## Value coercion
 

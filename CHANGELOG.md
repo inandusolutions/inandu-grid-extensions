@@ -17,8 +17,16 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The `MapInanduGrid*` endpoints log a warning once, when they are mapped, if they keep the permissive default
   (`AllowUnconfiguredFields = true`), pointing to deny-by-default. Behaviour is unchanged.
 
+- Set filters with values that contain a comma: `inEncoding=repeat` takes each `{field}_in` occurrence as one value,
+  exactly as sent (commas, empty values and padding survive), like `groupKeysEncoding=repeat` does for `groupKeys`.
+  `{field}_none=1` is the explicitly empty set and matches no rows; an `in` list built by hand with no items now
+  also matches no rows (it used to be ignored). See [docs/request-contract.md](docs/request-contract.md).
+
 ### Fixed
 
+- Keyset paging over text no longer skips rows that differ only by case. The seek folded case (the filter default,
+  `OrdinalIgnoreCase`) while the sort did not, so `a` and `A` were equal to the seek but ordered apart. The seek now
+  orders text like the sort does: the CLR comparer in memory, the column's collation in a database.
 - `offset` / `limit` paging returned the wrong window when the offset was not a multiple of the limit
   (`offset=30&limit=25` returned rows 25-49). It now returns exactly rows `[offset, offset + limit)`.
 - A keyset sequence sorted on a nullable column no longer loops forever at a null boundary key: the cursor

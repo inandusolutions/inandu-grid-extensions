@@ -148,3 +148,38 @@ public class KeysetNullBoundaryTests
         Assert.Equal(Enumerable.Range(11, 10), next.Data.Select(p => p.Id));
     }
 }
+
+/// <summary>Keyset seeks on text must order the way the sort does, or rows that differ only by case are skipped.</summary>
+public class KeysetStringSeekTests
+{
+    private static List<Product> Rows => new[] { "a", "A", "b", "B", "a", "A", "c", "C" }
+        .Select((sku, i) => new Product { Id = i + 1, Name = $"P{i + 1}", Sku = sku })
+        .ToList();
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void Keyset_over_text_that_differs_only_by_case_visits_every_row_once(int pageSize)
+    {
+        var seen = new List<int>();
+        string? cursor = null;
+
+        for (var guard = 0; guard < 50; guard++)
+        {
+            var qs = $"?pageSize={pageSize}&sort=sku,id" + (cursor is null ? "" : $"&after={cursor}");
+            var page = Rows.ToInanduGrid(qs, o => o.EnableKeyset = true);
+            seen.AddRange(page.Data.Select(p => p.Id));
+
+            if (page.HasMore != true)
+            {
+                break;
+            }
+
+            cursor = page.NextCursor;
+        }
+
+        Assert.Equal(Enumerable.Range(1, 8), seen.OrderBy(i => i));
+        Assert.Equal(8, seen.Distinct().Count());
+    }
+}

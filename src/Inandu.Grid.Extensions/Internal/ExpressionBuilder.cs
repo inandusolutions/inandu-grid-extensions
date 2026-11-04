@@ -344,7 +344,10 @@ internal static class ExpressionBuilder
         }
 
         var param = Expression.Parameter(typeof(T), "x");
-        var ignoreCase = IsIgnoreCase(options.StringComparison);
+        // The seek has to order text exactly like ORDER BY does: the CLR comparer in memory, the column's
+        // collation in a database. Folding case here (the filter default) made "a" and "A" equal to the seek
+        // while the sort kept them apart, so rows that differ only by case were skipped at a page boundary.
+        const bool ignoreCase = false;
 
         var members = new Expression[sorts.Count];
         var memberTypes = new Type[sorts.Count];
@@ -465,6 +468,12 @@ internal static class ExpressionBuilder
                 var v => new object?[] { v },
             };
             Expression? body = null;
+
+            // An explicitly empty list (not a string) is a set filter with nothing ticked: match no rows.
+            if (condition.Value is IEnumerable && condition.Value is not string && !items.Any())
+            {
+                return Expression.Constant(false);
+            }
 
             foreach (var item in items)
             {
