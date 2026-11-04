@@ -6,6 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-04
+
 ### Added
 
 - `groupKeys` as a repeated parameter: with `groupKeysEncoding=repeat`, each `groupKeys` occurrence is one drill-down key
@@ -168,7 +170,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/inandusolutions/inandu-grid-extensions/releases/tag/v0.4.0

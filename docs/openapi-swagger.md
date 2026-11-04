@@ -7,7 +7,7 @@ endpoints show up in Swagger UI with an empty parameter list, even though they a
 query params (`page`, `sort`, `q`, column filters, `aggregate`, …).
 
 `MapInanduGrid`, `MapInanduGridGrouped` and `MapInanduGridDistinct` (from `Inandu.Grid.Extensions.AspNetCore`)
-have the same problem, so, from the release after 0.5.0, they **tag themselves** with an `InanduGridEndpoint` metadata marker, and the
+have the same problem, so, from 0.6.0, they **tag themselves** with an `InanduGridEndpoint` metadata marker, and the
 package exposes the parameter list as data (`InanduGridOpenApi.Parameters(...)`). You add one small
 adapter for the generator you use — it is deliberately not a package, so it does not drag Swashbuckle
 or `Microsoft.AspNetCore.OpenApi` into your dependency graph.
