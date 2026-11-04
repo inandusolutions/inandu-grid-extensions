@@ -6,7 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-_Nothing yet_
+### Added
+
+- Diagnostics: every grid query (sync and `…Async`, rows / grouped / distinct) is reported through an
+  `ActivitySource` and a `Meter` named `Inandu.Grid.Extensions` (`InanduGridDiagnostics.SourceName` /
+  `MeterName`): one activity per query, an `inandu.grid.requests` counter and an
+  `inandu.grid.request.duration` histogram, tagged with the operation and the outcome
+  (`ok` / `rejected` / `error`). Field names, filter values and row data are never recorded. See
+  [docs/diagnostics.md](docs/diagnostics.md).
 
 ## [0.5.0] - 2026-11-03
 

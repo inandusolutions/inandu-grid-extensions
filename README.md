@@ -349,6 +349,8 @@ See **[docs/options.md](docs/options.md)**. Highlights: `DefaultPageSize`, `MaxP
 `SearchableFields`, `StringComparison`, `FieldMap` (grid field → CLR path), `ThrowOnUnknownField`,
 `Culture`.
 
+Traces and metrics (OpenTelemetry-ready): **[docs/diagnostics.md](docs/diagnostics.md)**.
+
 ## Build, test & benchmark
 
 ```bash
