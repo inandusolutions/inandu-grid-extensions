@@ -15,10 +15,14 @@ version number; install matching versions.
 
 ### Databases
 
-The EF Core tests run against **SQLite** (in memory). Translation to SQL for other providers is done by
-EF Core itself, and SQL Server and PostgreSQL are not covered by this repo's test suite yet
-(tracked in the audit backlog). If you use them, test the endpoints you expose, in particular
-string filters (`Contains`, `StartsWith`), case sensitivity and grouping.
+The EF Core tests (`Inandu.Grid.Extensions.EntityFrameworkCore.Tests`) run in CI against **SQLite**
+(in memory), **SQL Server 2022** and **PostgreSQL 17**, on net8.0 and net10.0. The same 24 tests run on
+each provider: paging, sorting, filters, advanced filter, grouping, distinct, aggregates, keyset,
+deny-by-default and projections. Other providers (MySQL, Oracle) are not covered: test the endpoints you
+expose, in particular string filters (`Contains`, `StartsWith`), case sensitivity and grouping.
+
+Run them against your own server with `INANDU_TEST_PROVIDER` (`sqlserver` or `postgres`) and
+`INANDU_TEST_CONNECTION` (a server-level connection string whose user can create databases).
 
 ## Front ends
 

@@ -42,3 +42,59 @@ jobs:
         # EnablePackageValidation + PackageValidationBaselineVersion fail the pack on a breaking
         # public-API change. Needs the .NET 10 SDK so both target frameworks are produced.
         run: dotnet pack Inandu.Grid.Extensions.sln -c Release --no-build -o ./artifacts
+  # The same EF Core tests as above, against real servers instead of in-memory SQLite. They pick the
+  # provider from INANDU_TEST_PROVIDER / INANDU_TEST_CONNECTION (see ShopFixture); each fixture
+  # creates and drops its own database.
+  ef-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: pw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      INANDU_TEST_PROVIDER: postgres
+      INANDU_TEST_CONNECTION: Host=localhost;Port=5432;Username=postgres;Password=pw
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+      - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release
+
+  ef-sqlserver:
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: Inandu_Pw1234
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P Inandu_Pw1234 -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+          --health-start-period 20s
+    env:
+      INANDU_TEST_PROVIDER: sqlserver
+      INANDU_TEST_CONNECTION: Server=localhost,1433;User Id=sa;Password=Inandu_Pw1234;TrustServerCertificate=True;Encrypt=False
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+      - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release
