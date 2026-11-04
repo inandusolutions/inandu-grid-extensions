@@ -173,7 +173,7 @@ public class EfCoreTests : IClassFixture<ShopFixture>
 
         // NB: SQLite can't ORDER BY decimal, so sort on a non-decimal column here.
         var result = await db.Widgets.AsNoTracking()
-            .ToInanduGridAsync("?page=2&pageSize=10&sort=-id&price_gte=50&category_eq=Cat 1");
+            .ToInanduGridAsync("?page=2&pageSize=10&sort=-id&price_gte=50&category_eq=Cat 1", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.Page);
         Assert.InRange(result.Data.Count, 1, 10);
@@ -191,9 +191,9 @@ public class EfCoreTests : IClassFixture<ShopFixture>
         var request = new InanduGridRequest { PageSize = 5 };
         request.ColumnFilters["status"] = new InanduGridColumnFilter { Values = new() { "Active" } };
 
-        var result = await db.Widgets.AsNoTracking().ToInanduGridAsync(request);
+        var result = await db.Widgets.AsNoTracking().ToInanduGridAsync(request, cancellationToken: TestContext.Current.CancellationToken);
 
-        var expected = await db.Widgets.CountAsync(w => w.Status == ShopStatus.Active);
+        var expected = await db.Widgets.CountAsync(w => w.Status == ShopStatus.Active, TestContext.Current.CancellationToken);
         Assert.Equal(expected, result.Total);
         Assert.Equal(5, result.Data.Count);
     }
@@ -205,7 +205,7 @@ public class EfCoreTests : IClassFixture<ShopFixture>
 
         var result = await db.Widgets.AsNoTracking().ToInanduGridAsync(
             w => new { w.Id, w.Name },
-            "?pageSize=5&sort=id");
+            "?pageSize=5&sort=id", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(5, result.Data.Count);
         Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Data.Select(x => x.Id));
@@ -227,7 +227,7 @@ public class EfCoreTests : IClassFixture<ShopFixture>
             """;
 
         var result = await db.Widgets.AsNoTracking()
-            .ToInanduGridAsync("?pageSize=200&filter=" + Uri.EscapeDataString(json));
+            .ToInanduGridAsync("?pageSize=200&filter=" + Uri.EscapeDataString(json), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.All(result.Data, w =>
         {
@@ -242,12 +242,12 @@ public class EfCoreTests : IClassFixture<ShopFixture>
     {
         await using var db = _fx.NewContext();
 
-        var top = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category&pageSize=50");
+        var top = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category&pageSize=50", cancellationToken: TestContext.Current.CancellationToken);
         Assert.False(top.IsLeaf);
         Assert.Equal(6, top.Total); // Cat 0..5
         Assert.Equal(240, top.Groups!.Sum(g => g.Count));
 
-        var drill = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category&groupKeys=Cat 1&pageSize=1000");
+        var drill = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category&groupKeys=Cat 1&pageSize=1000", cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(drill.IsLeaf);
         Assert.All(drill.Rows!, w => Assert.Equal("Cat 1", w.Category));
         Assert.Equal(40, drill.Total);
@@ -259,7 +259,7 @@ public class EfCoreTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         var res = await db.Widgets.AsNoTracking()
-            .ToInanduGridGroupedAsync("?groupBy=category&sort=-count&discontinued_eq=false&pageSize=50");
+            .ToInanduGridGroupedAsync("?groupBy=category&sort=-count&discontinued_eq=false&pageSize=50", cancellationToken: TestContext.Current.CancellationToken);
 
         var counts = res.Groups!.Select(g => g.Count).ToList();
         Assert.Equal(counts.OrderByDescending(c => c).ToList(), counts);
@@ -272,12 +272,12 @@ public class EfCoreTests : IClassFixture<ShopFixture>
 
         // NB: SQLite can't SUM/AVG/MAX/MIN decimal, so aggregate int / date columns here.
         var result = await db.Widgets.AsNoTracking()
-            .ToInanduGridAsync("?pageSize=2&status_eq=Active&aggregate=sum:stock,count:*,max:stock,min:createdOn");
+            .ToInanduGridAsync("?pageSize=2&status_eq=Active&aggregate=sum:stock,count:*,max:stock,min:createdOn", cancellationToken: TestContext.Current.CancellationToken);
 
         var active = db.Widgets.Where(w => w.Status == ShopStatus.Active);
-        Assert.Equal(await active.SumAsync(w => w.Stock), (int?)result.Aggregations!["sum:stock"]);
-        Assert.Equal(await active.CountAsync(), result.Aggregations["count:*"]);
-        Assert.Equal(await active.MaxAsync(w => w.Stock), (int?)result.Aggregations["max:stock"]);
+        Assert.Equal(await active.SumAsync(w => w.Stock, TestContext.Current.CancellationToken), (int?)result.Aggregations!["sum:stock"]);
+        Assert.Equal(await active.CountAsync(TestContext.Current.CancellationToken), result.Aggregations["count:*"]);
+        Assert.Equal(await active.MaxAsync(w => w.Stock, TestContext.Current.CancellationToken), (int?)result.Aggregations["max:stock"]);
         Assert.IsType<DateTime>(result.Aggregations["min:createdOn"]);
     }
 
@@ -286,8 +286,8 @@ public class EfCoreTests : IClassFixture<ShopFixture>
     {
         await using var db = _fx.NewContext();
 
-        var page1 = await db.Widgets.AsNoTracking().ToInanduGridAsync("?pageSize=20&sort=id", o => o.EnableKeyset = true);
-        var page2 = await db.Widgets.AsNoTracking().ToInanduGridAsync($"?pageSize=20&sort=id&after={page1.NextCursor}");
+        var page1 = await db.Widgets.AsNoTracking().ToInanduGridAsync("?pageSize=20&sort=id", o => o.EnableKeyset = true, cancellationToken: TestContext.Current.CancellationToken);
+        var page2 = await db.Widgets.AsNoTracking().ToInanduGridAsync($"?pageSize=20&sort=id&after={page1.NextCursor}", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(Enumerable.Range(1, 20), page1.Data.Select(w => w.Id));
         Assert.Equal(Enumerable.Range(21, 20), page2.Data.Select(w => w.Id));
@@ -299,7 +299,7 @@ public class EfCoreTests : IClassFixture<ShopFixture>
     {
         await using var db = _fx.NewContext();
 
-        var result = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("category", "?pageSize=50");
+        var result = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("category", "?pageSize=50", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(6, result.Total);
         Assert.Equal(240, result.Values.Sum(v => v.Count));
@@ -311,7 +311,7 @@ public class EfCoreTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         var result = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("category", "?pageSize=50",
-            o => o.Column("category").NotFilterable());
+            o => o.Column("category").NotFilterable(), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Empty(result.Values);
         Assert.Equal(0, result.Total);
@@ -323,7 +323,7 @@ public class EfCoreTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         var result = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category",
-            o => o.Column("category").NotFilterable());
+            o => o.Column("category").NotFilterable(), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.IsLeaf);
         Assert.Equal(240, result.Total);

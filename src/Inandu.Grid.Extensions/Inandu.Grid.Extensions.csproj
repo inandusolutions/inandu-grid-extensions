@@ -16,7 +16,7 @@
     <Version>0.6.0</Version>
     <!-- Fail the pack on a breaking public-API change against the last released version. -->
     <EnablePackageValidation>true</EnablePackageValidation>
-    <PackageValidationBaselineVersion>0.5.0</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion>0.6.0</PackageValidationBaselineVersion>
     <Description>Server-side paging, sorting and filtering for the Inandu Grid components (@inandu-solutions/grid-angular, grid-react and grid-vue). A dependency-free ToInanduGrid() LINQ extension that turns an inandu-grid serverSide request into a single page of data plus the total count — with DTO projection, an advanced-filter (nested AND/OR) bridge and server-side grouping. Targets .NET 8 and .NET 10.</Description>
     <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
   </PropertyGroup>

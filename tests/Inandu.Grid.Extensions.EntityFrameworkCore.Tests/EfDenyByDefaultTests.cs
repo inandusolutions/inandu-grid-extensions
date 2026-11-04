@@ -25,7 +25,7 @@ public class EfDenyByDefaultTests : IClassFixture<ShopFixture>
     {
         await using var db = _fx.NewContext();
 
-        var result = await db.Widgets.AsNoTracking().ToInanduGridAsync("?stock_gt=100&pageSize=5", Locked);
+        var result = await db.Widgets.AsNoTracking().ToInanduGridAsync("?stock_gt=100&pageSize=5", Locked, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(240, result.Total);
     }
@@ -35,7 +35,7 @@ public class EfDenyByDefaultTests : IClassFixture<ShopFixture>
     {
         await using var db = _fx.NewContext();
 
-        var result = await db.Widgets.AsNoTracking().ToInanduGridAsync("?category_eq=Cat 1&pageSize=5", Locked);
+        var result = await db.Widgets.AsNoTracking().ToInanduGridAsync("?category_eq=Cat 1&pageSize=5", Locked, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(40, result.Total);
     }
@@ -45,9 +45,9 @@ public class EfDenyByDefaultTests : IClassFixture<ShopFixture>
     {
         await using var db = _fx.NewContext();
 
-        var distinct = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("stock", "?pageSize=50", Locked);
-        var grouped = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=stock&pageSize=5", Locked);
-        var aggregated = await db.Widgets.AsNoTracking().ToInanduGridAsync("?aggregate=max:stock,count:*&pageSize=1", Locked);
+        var distinct = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("stock", "?pageSize=50", Locked, cancellationToken: TestContext.Current.CancellationToken);
+        var grouped = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=stock&pageSize=5", Locked, cancellationToken: TestContext.Current.CancellationToken);
+        var aggregated = await db.Widgets.AsNoTracking().ToInanduGridAsync("?aggregate=max:stock,count:*&pageSize=1", Locked, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Empty(distinct.Values);
         Assert.True(grouped.IsLeaf);
@@ -61,8 +61,8 @@ public class EfDenyByDefaultTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         // "Cat 1" lives in Category, which is configured but not marked Searchable.
-        var byCategory = await db.Widgets.AsNoTracking().ToInanduGridAsync("?q=Cat 1&pageSize=5", Locked);
-        var byName = await db.Widgets.AsNoTracking().ToInanduGridAsync("?q=Widget 0001&pageSize=5", Locked);
+        var byCategory = await db.Widgets.AsNoTracking().ToInanduGridAsync("?q=Cat 1&pageSize=5", Locked, cancellationToken: TestContext.Current.CancellationToken);
+        var byName = await db.Widgets.AsNoTracking().ToInanduGridAsync("?q=Widget 0001&pageSize=5", Locked, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(0, byCategory.Total);
         Assert.Equal(1, byName.Total);
@@ -74,6 +74,6 @@ public class EfDenyByDefaultTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         await Assert.ThrowsAsync<InanduGridRequestException>(() => db.Widgets.AsNoTracking().ToInanduGridAsync(
-            "?sort=-stock", o => { Locked(o); o.ThrowOnUnknownField = true; }));
+            "?sort=-stock", o => { Locked(o); o.ThrowOnUnknownField = true; }, cancellationToken: TestContext.Current.CancellationToken));
     }
 }

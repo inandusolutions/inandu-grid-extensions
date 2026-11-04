@@ -51,7 +51,7 @@ public class GroupKeysEncodingHttpTests
     {
         var client = await ServerAsync();
         var doc = await client.GetFromJsonAsync<JsonElement>(
-            "/people/groups?groupBy=name,region&groupKeys=Smith%2C%20John&groupKeysEncoding=repeat");
+            "/people/groups?groupBy=name,region&groupKeys=Smith%2C%20John&groupKeysEncoding=repeat", TestContext.Current.CancellationToken);
 
         Assert.Equal(new[] { "APAC", "EMEA" }, Keys(doc));
     }
@@ -62,7 +62,7 @@ public class GroupKeysEncodingHttpTests
         var client = await ServerAsync();
         // "Smith, John" -> ["Smith", "John"]: level 2 of name,region is the leaf; nobody is named "John", so no rows.
         var doc = await client.GetFromJsonAsync<JsonElement>(
-            "/people/groups?groupBy=name,region&groupKeys=Smith%2C%20John");
+            "/people/groups?groupBy=name,region&groupKeys=Smith%2C%20John", TestContext.Current.CancellationToken);
 
         Assert.True(doc.GetProperty("isLeaf").GetBoolean());
         Assert.Equal(0, doc.GetProperty("rows").GetArrayLength());
@@ -74,11 +74,11 @@ public class GroupKeysEncodingHttpTests
         var client = await ServerAsync();
 
         var padded = await client.GetFromJsonAsync<JsonElement>(
-            "/people/groups?groupBy=name,region&groupKeys=+padded+&groupKeysEncoding=repeat");
+            "/people/groups?groupBy=name,region&groupKeys=+padded+&groupKeysEncoding=repeat", TestContext.Current.CancellationToken);
         Assert.Equal(new[] { "EMEA" }, Keys(padded));
 
         var empty = await client.GetFromJsonAsync<JsonElement>(
-            "/people/groups?groupBy=name,region&groupKeys=&groupKeysEncoding=repeat");
+            "/people/groups?groupBy=name,region&groupKeys=&groupKeysEncoding=repeat", TestContext.Current.CancellationToken);
         Assert.Equal(new[] { "EMEA" }, Keys(empty));
     }
 
@@ -87,7 +87,7 @@ public class GroupKeysEncodingHttpTests
     {
         var client = await ServerAsync();
         var doc = await client.GetFromJsonAsync<JsonElement>(
-            "/people/groups?groupBy=name,region&groupKeys=Smith%2C%20John&groupKeys=APAC&groupKeysEncoding=repeat");
+            "/people/groups?groupBy=name,region&groupKeys=Smith%2C%20John&groupKeys=APAC&groupKeysEncoding=repeat", TestContext.Current.CancellationToken);
 
         Assert.True(doc.GetProperty("isLeaf").GetBoolean());
         var ids = doc.GetProperty("rows").EnumerateArray().Select(r => r.GetProperty("id").GetInt32()).ToArray();
@@ -99,7 +99,7 @@ public class GroupKeysEncodingHttpTests
     {
         var client = await ServerAsync();
         var doc = await client.GetFromJsonAsync<JsonElement>(
-            "/people/groups?groupBy=region&groupKeysEncoding=repeat");
+            "/people/groups?groupBy=region&groupKeysEncoding=repeat", TestContext.Current.CancellationToken);
 
         Assert.Equal(new[] { "APAC", "EMEA" }, Keys(doc));
     }
