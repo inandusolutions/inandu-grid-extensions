@@ -58,7 +58,7 @@ public class BindingTests
         ctx.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
         ctx.Request.ContentLength = ctx.Request.Body.Length;
 
-        var request = await InanduGridBinding.FromHttpRequestAsync(ctx.Request);
+        var request = await InanduGridBinding.FromHttpRequestAsync(ctx.Request, TestContext.Current.CancellationToken);
 
         Assert.Equal(4, request.Page);
         Assert.Equal(20, request.PageSize);
@@ -73,7 +73,7 @@ public class BindingTests
     {
         var ctx = ContextWithQuery("?page=7");
         ctx.Request.Method = "GET";
-        var request = await InanduGridBinding.FromHttpRequestAsync(ctx.Request);
+        var request = await InanduGridBinding.FromHttpRequestAsync(ctx.Request, TestContext.Current.CancellationToken);
         Assert.Equal(7, request.Page);
     }
 

@@ -55,7 +55,7 @@ public class MapEndpointAllowListTests
     public async Task Distinct_on_a_locked_column_returns_no_values()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/distinct/secret?pageSize=100");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/distinct/secret?pageSize=100", TestContext.Current.CancellationToken);
 
         Assert.Equal(0, doc.GetProperty("values").GetArrayLength());
         Assert.Equal(0, doc.GetProperty("total").GetInt32());
@@ -65,7 +65,7 @@ public class MapEndpointAllowListTests
     public async Task Distinct_on_a_locked_column_ignores_casing_tricks()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/distinct/SECRET?pageSize=100");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/distinct/SECRET?pageSize=100", TestContext.Current.CancellationToken);
 
         Assert.Equal(0, doc.GetProperty("values").GetArrayLength());
     }
@@ -74,7 +74,7 @@ public class MapEndpointAllowListTests
     public async Task Distinct_on_an_allowed_column_still_works()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/distinct/region?pageSize=100");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/distinct/region?pageSize=100", TestContext.Current.CancellationToken);
 
         Assert.Equal(3, doc.GetProperty("total").GetInt32());
     }
@@ -83,7 +83,7 @@ public class MapEndpointAllowListTests
     public async Task Distinct_on_an_unknown_field_is_not_a_500()
     {
         var client = await ServerAsync();
-        var response = await client.GetAsync("/accounts/distinct/doesNotExist");
+        var response = await client.GetAsync("/accounts/distinct/doesNotExist", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -92,7 +92,7 @@ public class MapEndpointAllowListTests
     public async Task Grouping_by_a_locked_column_returns_rows_not_groups()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/groups?groupBy=secret&pageSize=5");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts/groups?groupBy=secret&pageSize=5", TestContext.Current.CancellationToken);
 
         Assert.True(doc.GetProperty("isLeaf").GetBoolean());
         Assert.Equal(JsonValueKind.Null, doc.TryGetProperty("groups", out var g) ? g.ValueKind : JsonValueKind.Null);
@@ -102,7 +102,7 @@ public class MapEndpointAllowListTests
     public async Task Grouping_by_an_unknown_field_is_not_a_500()
     {
         var client = await ServerAsync();
-        var response = await client.GetAsync("/accounts/groups?groupBy=doesNotExist");
+        var response = await client.GetAsync("/accounts/groups?groupBy=doesNotExist", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -111,7 +111,7 @@ public class MapEndpointAllowListTests
     public async Task Aggregates_do_not_reveal_a_locked_column()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts?aggregate=max:secret,min:secret,sum:balance&pageSize=1");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/accounts?aggregate=max:secret,min:secret,sum:balance&pageSize=1", TestContext.Current.CancellationToken);
 
         var aggregations = doc.GetProperty("aggregations");
         Assert.False(aggregations.TryGetProperty("max:secret", out _));

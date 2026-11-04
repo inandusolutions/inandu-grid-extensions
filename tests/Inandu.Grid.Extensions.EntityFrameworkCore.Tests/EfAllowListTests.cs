@@ -19,7 +19,7 @@ public class EfAllowListTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         await Assert.ThrowsAsync<InanduGridRequestException>(() => db.Widgets.AsNoTracking().ToInanduGridDistinctAsync(
-            "category", "?pageSize=50", o => { o.Column("category").NotFilterable(); o.ThrowOnUnknownField = true; }));
+            "category", "?pageSize=50", o => { o.Column("category").NotFilterable(); o.ThrowOnUnknownField = true; }, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -27,7 +27,7 @@ public class EfAllowListTests : IClassFixture<ShopFixture>
     {
         await using var db = _fx.NewContext();
 
-        var result = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("doesNotExist", "?pageSize=50");
+        var result = await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("doesNotExist", "?pageSize=50", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Empty(result.Values);
         Assert.Equal(0, result.Total);
@@ -39,7 +39,7 @@ public class EfAllowListTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         await Assert.ThrowsAsync<InanduGridRequestException>(() => db.Widgets.AsNoTracking().ToInanduGridGroupedAsync(
-            "?groupBy=category", o => { o.Column("category").NotFilterable(); o.ThrowOnUnknownField = true; }));
+            "?groupBy=category", o => { o.Column("category").NotFilterable(); o.ThrowOnUnknownField = true; }, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class EfAllowListTests : IClassFixture<ShopFixture>
 
         // category is locked: groupBy=category,status + groupKeys=Cat 1 becomes a top-level groupBy=status.
         var result = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync(
-            "?groupBy=category,status&groupKeys=Cat 1&pageSize=50", o => o.Column("category").NotFilterable());
+            "?groupBy=category,status&groupKeys=Cat 1&pageSize=50", o => o.Column("category").NotFilterable(), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.False(result.IsLeaf);
         Assert.Equal(0, result.Level);
@@ -63,7 +63,7 @@ public class EfAllowListTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         var result = await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync(
-            "?groupBy=category&pageSize=50", o => o.Column("price").NotFilterable());
+            "?groupBy=category&pageSize=50", o => o.Column("price").NotFilterable(), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(6, result.Total);
         Assert.Equal(240, result.Groups!.Sum(g => g.Count));
@@ -75,7 +75,7 @@ public class EfAllowListTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         var result = await db.Widgets.AsNoTracking().ToInanduGridAsync(
-            "?aggregate=max:stock,count:*&pageSize=5", o => o.Column("stock").NotFilterable());
+            "?aggregate=max:stock,count:*&pageSize=5", o => o.Column("stock").NotFilterable(), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.False(result.Aggregations!.ContainsKey("max:stock"));
         Assert.Equal(240, result.Aggregations["count:*"]);
@@ -87,6 +87,6 @@ public class EfAllowListTests : IClassFixture<ShopFixture>
         await using var db = _fx.NewContext();
 
         await Assert.ThrowsAsync<InanduGridRequestException>(() => db.Widgets.AsNoTracking().ToInanduGridAsync(
-            "?aggregate=max:stock", o => { o.Column("stock").NotFilterable(); o.ThrowOnUnknownField = true; }));
+            "?aggregate=max:stock", o => { o.Column("stock").NotFilterable(); o.ThrowOnUnknownField = true; }, cancellationToken: TestContext.Current.CancellationToken));
     }
 }

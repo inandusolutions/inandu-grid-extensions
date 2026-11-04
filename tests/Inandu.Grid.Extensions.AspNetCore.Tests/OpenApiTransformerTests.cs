@@ -73,9 +73,9 @@ public class OpenApiTransformerTests
                     e.MapInanduGridGrouped("/items/groups", new List<Item>());
                 });
             });
-        }).StartAsync();
+        }).StartAsync(TestContext.Current.CancellationToken);
 
-        var json = await host.GetTestClient().GetStringAsync("/openapi/v1.json");
+        var json = await host.GetTestClient().GetStringAsync("/openapi/v1.json", TestContext.Current.CancellationToken);
         using var doc = JsonDocument.Parse(json);
         string[] Params(string path) => doc.RootElement.GetProperty("paths").GetProperty(path).GetProperty("get")
             .GetProperty("parameters").EnumerateArray().Select(p => p.GetProperty("name").GetString()!).ToArray();

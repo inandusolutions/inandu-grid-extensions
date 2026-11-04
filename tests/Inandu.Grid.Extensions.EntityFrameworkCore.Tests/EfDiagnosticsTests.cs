@@ -33,9 +33,9 @@ public class EfDiagnosticsTests : IClassFixture<ShopFixture>
         Active.Value = true;
 
         await using var db = _fx.NewContext();
-        var page = await db.Widgets.AsNoTracking().ToInanduGridAsync("?pageSize=5");
-        await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category&pageSize=5");
-        await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("category", "?pageSize=5");
+        var page = await db.Widgets.AsNoTracking().ToInanduGridAsync("?pageSize=5", cancellationToken: TestContext.Current.CancellationToken);
+        await db.Widgets.AsNoTracking().ToInanduGridGroupedAsync("?groupBy=category&pageSize=5", cancellationToken: TestContext.Current.CancellationToken);
+        await db.Widgets.AsNoTracking().ToInanduGridDistinctAsync("category", "?pageSize=5", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(
             new[] { "inandu.grid.query", "inandu.grid.grouped", "inandu.grid.distinct" },

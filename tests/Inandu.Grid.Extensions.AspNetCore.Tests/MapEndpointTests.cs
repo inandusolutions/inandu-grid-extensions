@@ -57,7 +57,7 @@ public class MapEndpointTests
     public async Task MapInanduGrid_returns_a_page()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/items?pageSize=5&sort=-id");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/items?pageSize=5&sort=-id", TestContext.Current.CancellationToken);
 
         Assert.Equal(5, doc.GetProperty("data").GetArrayLength());
         Assert.Equal(60, doc.GetProperty("total").GetInt32());
@@ -68,7 +68,7 @@ public class MapEndpointTests
     public async Task MapInanduGridGrouped_returns_groups()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/items/groups?groupBy=group&pageSize=10");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/items/groups?groupBy=group&pageSize=10", TestContext.Current.CancellationToken);
 
         Assert.False(doc.GetProperty("isLeaf").GetBoolean());
         Assert.Equal(4, doc.GetProperty("total").GetInt32());
@@ -78,7 +78,7 @@ public class MapEndpointTests
     public async Task MapInanduGridDistinct_uses_the_route_field()
     {
         var client = await ServerAsync();
-        var doc = await client.GetFromJsonAsync<JsonElement>("/items/distinct/group?pageSize=10");
+        var doc = await client.GetFromJsonAsync<JsonElement>("/items/distinct/group?pageSize=10", TestContext.Current.CancellationToken);
 
         Assert.Equal("group", doc.GetProperty("field").GetString());
         Assert.Equal(4, doc.GetProperty("total").GetInt32());
@@ -99,10 +99,10 @@ public class MapEndpointTests
             });
             web.ConfigureServices(s => s.AddRouting());
         });
-        using var host = await builder.StartAsync();
-        var resp = await host.GetTestClient().GetAsync("/d");
+        using var host = await builder.StartAsync(TestContext.Current.CancellationToken);
+        var resp = await host.GetTestClient().GetAsync("/d", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
-        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var doc = await resp.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         Assert.True(doc.GetProperty("errors").TryGetProperty("field", out _));
     }
 
@@ -110,11 +110,11 @@ public class MapEndpointTests
     public async Task MapInanduGrid_returns_400_validation_problem_for_an_unknown_field_in_strict_mode()
     {
         var client = await ServerAsync();
-        var response = await client.GetAsync("/strict?sort=nope");
+        var response = await client.GetAsync("/strict?sort=nope", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var doc = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         Assert.True(doc.GetProperty("errors").TryGetProperty("sort", out _));
     }
 
@@ -122,10 +122,10 @@ public class MapEndpointTests
     public async Task MapInanduGrid_returns_400_validation_problem_when_a_limit_is_rejected()
     {
         var client = await ServerAsync();
-        var response = await client.GetAsync("/capped?sort=id,name");
+        var response = await client.GetAsync("/capped?sort=id,name", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var doc = await response.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         Assert.True(doc.GetProperty("errors").TryGetProperty("sort", out _));
     }
 
@@ -133,7 +133,7 @@ public class MapEndpointTests
     public async Task MapInanduGridGrouped_returns_400_validation_problem_in_strict_mode()
     {
         var client = await ServerAsync();
-        var response = await client.GetAsync("/strict/groups?groupBy=group&nope_eq=1");
+        var response = await client.GetAsync("/strict/groups?groupBy=group&nope_eq=1", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -142,7 +142,7 @@ public class MapEndpointTests
     public async Task Strict_endpoint_still_returns_200_for_a_valid_request()
     {
         var client = await ServerAsync();
-        var response = await client.GetAsync("/strict?sort=-score&pageSize=5");
+        var response = await client.GetAsync("/strict?sort=-score&pageSize=5", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
