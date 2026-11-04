@@ -44,7 +44,7 @@ A leading `+` is allowed and ignored. Aliases: `orderby`, `order`.
 | Param | Meaning |
 |---|---|
 | `groupBy` | Comma-separated group fields, outermost first (`groupBy=region,category`). |
-| `groupKeys` | The already-expanded path for a drill-down (`groupKeys=EMEA` / `groupKeys=EMEA,2026`); each value is `eq`-matched against the corresponding `groupBy` field. |
+| `groupKeys` | The already-expanded path for a drill-down (`groupKeys=EMEA` / `groupKeys=EMEA,2026`); each value is `eq`-matched against the corresponding `groupBy` field. With `groupKeysEncoding=repeat` every occurrence is one key taken as-is (commas, empty values and padding survive) - see [grouping.md](grouping.md). |
 
 See [grouping.md](grouping.md).
 

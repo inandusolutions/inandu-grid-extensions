@@ -29,15 +29,28 @@ public sealed class Widget
     public DateTime CreatedOn { get; set; }
 }
 
+/// <summary>Group keys that need care: a comma, an empty value, edge whitespace.</summary>
+public sealed class Contact
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+}
+
 public sealed class ShopContext : DbContext
 {
     public ShopContext(DbContextOptions<ShopContext> options) : base(options) { }
 
     public DbSet<Widget> Widgets => Set<Widget>();
 
+    public DbSet<Contact> Contacts => Set<Contact>();
+
     // The seed assigns ids itself; without this SQL Server makes `Id` an IDENTITY column and rejects them.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.Entity<Widget>().Property(w => w.Id).ValueGeneratedNever();
+    {
+        modelBuilder.Entity<Widget>().Property(w => w.Id).ValueGeneratedNever();
+        modelBuilder.Entity<Contact>().Property(c => c.Id).ValueGeneratedNever();
+    }
 }
 
 /// <summary>
@@ -113,6 +126,12 @@ public sealed class ShopFixture : IDisposable
             Status = (ShopStatus)(i % 3),
             CreatedOn = new DateTime(2026, 1, 1).AddHours(i),
         }));
+        db.Contacts.AddRange(
+            new Contact { Id = 1, Name = "Smith, John", Region = "EMEA" },
+            new Contact { Id = 2, Name = "Smith, John", Region = "APAC" },
+            new Contact { Id = 3, Name = "Smith", Region = "EMEA" },
+            new Contact { Id = 4, Name = "", Region = "EMEA" },
+            new Contact { Id = 5, Name = " padded", Region = "EMEA" });
         db.SaveChanges();
     }
 
