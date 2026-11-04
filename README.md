@@ -239,6 +239,8 @@ A disallowed operator / sort / filter is dropped — or, with `o.ThrowOnUnknownF
 nodes, `in`-list length, group levels, aggregations). `o.OnLimitExceeded` is `Trim` (default) or
 `Reject` (throw). Defaults are generous; tighten for a public endpoint.
 
+Exposing the endpoint publicly? Follow the **[hardening checklist](docs/hardening.md)**.
+
 ## Minimal-API one-liners (`Inandu.Grid.Extensions.AspNetCore`)
 
 ```csharp
@@ -348,6 +350,8 @@ See **[docs/request-contract.md](docs/request-contract.md)** for the full parame
 See **[docs/options.md](docs/options.md)**. Highlights: `DefaultPageSize`, `MaxPageSize`,
 `SearchableFields`, `StringComparison`, `FieldMap` (grid field → CLR path), `ThrowOnUnknownField`,
 `Culture`.
+
+Supported .NET / EF Core / front-end versions: **[docs/compatibility.md](docs/compatibility.md)**.
 
 ## Build, test & benchmark
 
