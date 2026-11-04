@@ -6,6 +6,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-04
+
+### Fixed
+
+- Keyset paging now builds its seek and its `nextCursor` only from the sort fields the options allow. Before, a sort
+  on a field that `AllowUnconfiguredFields = false` or `Sortable(false)` hides was ignored for ordering but still
+  encoded into the cursor, so that field's value could appear in `nextCursor` and a crafted `after` cursor could filter
+  on it. This only affects setups that use keyset paging (`EnableKeyset` or `after`) together with a restricted field
+  list; offset paging was never affected. If you do, please upgrade.
+- The advanced `filter` now honours the operators a column allows with `Filterable(...)`, like the flat
+  `{field}_{op}` parameters already did. `between` needs both `gte` and `lte` allowed.
+
 ## [0.6.0] - 2026-11-04
 
 ### Added
@@ -170,7 +182,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.0...v0.4.1

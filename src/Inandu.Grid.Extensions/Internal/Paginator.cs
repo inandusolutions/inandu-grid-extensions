@@ -23,7 +23,8 @@ internal static class Paginator
     public static PagePlan<T> Plan<T>(IQueryable<T> sorted, InanduGridRequest request, InanduGridOptions options)
     {
         var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
-        var sorts = request.Sort as IReadOnlyList<InanduGridSort> ?? request.Sort.ToList();
+        // Only the sorts ApplySort actually applied: a field the options hide must not reach the seek or the cursor.
+        var sorts = ExpressionBuilder.EffectiveSorts<T>(request.Sort, options);
 
         var wantsKeyset = sorts.Count > 0 && (request.After is not null || options.EnableKeyset);
         if (!wantsKeyset)
