@@ -6,29 +6,59 @@ Core's model binding can see**. Swashbuckle documents what model binding sees, s
 endpoints show up in Swagger UI with an empty parameter list, even though they accept a dozen
 query params (`page`, `sort`, `q`, column filters, `aggregate`, …).
 
-`MapInanduGrid`/`MapInanduGridGrouped` (from `Inandu.Grid.Extensions.AspNetCore`) have the same
-problem — they're minimal-API endpoints under the hood too.
-
-There's no NuGet package for this (it would need to guess which endpoints are "InanduGrid
-endpoints" and how, which is exactly what would make it fragile). Instead, here's the ~50-line
-pattern the [playground](../playground/Inandu.Grid.Extensions.Playground/InanduGridOpenApi.cs)
-actually uses — copy it into your project and adjust the parameter list to whatever your endpoint
-supports (skip `groupBy`/`groupKeys` for a plain `ToInanduGrid()` endpoint, skip `after` unless
-`EnableKeyset` is on, etc.).
-
-## 1. A metadata marker
+`MapInanduGrid`, `MapInanduGridGrouped` and `MapInanduGridDistinct` (from `Inandu.Grid.Extensions.AspNetCore`)
+have the same problem, so, from the release after 0.5.0, they **tag themselves** with an `InanduGridEndpoint` metadata marker, and the
+package exposes the parameter list as data (`InanduGridOpenApi.Parameters(...)`). You add one small
+adapter for the generator you use — it is deliberately not a package, so it does not drag Swashbuckle
+or `Microsoft.AspNetCore.OpenApi` into your dependency graph.
 
 ```csharp
-public sealed class InanduGridEndpoint
+public sealed class InanduGridEndpoint            // Inandu.Grid.Extensions.AspNetCore
 {
-    public bool Grouped { get; init; }
-    public bool Keyset { get; init; }
+    public bool Grouped { get; init; }            // groupBy / groupKeys
+    public bool Keyset  { get; init; }            // after (detected from EnableKeyset for MapInanduGrid)
+    public bool Distinct { get; init; }           // field, no aggregate
 }
 ```
 
-## 2. An `IOperationFilter` that reads it
+An endpoint you wire by hand (`app.MapGet(..., (HttpRequest r) => r.QueryString ...)`) is not tagged
+automatically: add `.WithMetadata(new InanduGridEndpoint())` to it.
+
+## Microsoft.AspNetCore.OpenApi (.NET 9 / 10)
 
 ```csharp
+using Inandu.Grid.Extensions.AspNetCore;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
+
+public sealed class InanduGridOperationTransformer : IOpenApiOperationTransformer
+{
+    public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken ct)
+    {
+        var endpoint = context.Description.ActionDescriptor.EndpointMetadata.OfType<InanduGridEndpoint>().FirstOrDefault();
+        if (endpoint is null) return Task.CompletedTask;
+
+        operation.Parameters ??= new List<IOpenApiParameter>();
+        foreach (var p in InanduGridOpenApi.Parameters(endpoint))
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = p.Name, In = ParameterLocation.Query, Required = false, Description = p.Description,
+                Schema = new OpenApiSchema { Type = p.IsInteger ? JsonSchemaType.Integer : JsonSchemaType.String },
+            });
+        return Task.CompletedTask;
+    }
+}
+
+builder.Services.AddOpenApi(o => o.AddOperationTransformer<InanduGridOperationTransformer>());
+```
+
+This exact transformer is compiled and run against a generated document in the test suite
+(`OpenApiTransformerTests`, net10.0).
+
+## Swashbuckle
+
+```csharp
+using Inandu.Grid.Extensions.AspNetCore;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -36,54 +66,29 @@ public sealed class InanduGridSwaggerFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        var metadata = context.ApiDescription.ActionDescriptor.EndpointMetadata
-            .OfType<InanduGridEndpoint>().FirstOrDefault();
-        if (metadata is null) return;
+        var endpoint = context.ApiDescription.ActionDescriptor.EndpointMetadata.OfType<InanduGridEndpoint>().FirstOrDefault();
+        if (endpoint is null) return;
 
         operation.Parameters ??= new List<IOpenApiParameter>();
-        void Add(string name, string description, JsonSchemaType type = JsonSchemaType.String) =>
+        foreach (var p in InanduGridOpenApi.Parameters(endpoint))
             operation.Parameters.Add(new OpenApiParameter
             {
-                Name = name, In = ParameterLocation.Query, Required = false,
-                Description = description, Schema = new OpenApiSchema { Type = type },
+                Name = p.Name, In = ParameterLocation.Query, Required = false, Description = p.Description,
+                Schema = new OpenApiSchema { Type = p.IsInteger ? JsonSchemaType.Integer : JsonSchemaType.String },
             });
-
-        Add("page", "1-based page number. Default 1.", JsonSchemaType.Integer);
-        Add("pageSize", "Rows per page, clamped to MaxPageSize. Default 25.", JsonSchemaType.Integer);
-        Add("sort", "Comma-separated fields; a leading '-' sorts descending, e.g. sort=-createdOn,name.");
-        Add("q", "Free-text search across the configured SearchableFields.");
-        Add("filter", "A JSON advanced-filter tree (nested AND/OR conditions).");
-        Add("{field}_{op}", "A column filter, e.g. price_gte=20. op is one of eq, neq, contains, startsWith, endsWith, gt, gte, lt, lte, in.");
-        Add("aggregate", "Comma-separated function:field totals over the filtered set, e.g. sum:amount,count:*.");
-        if (metadata.Grouped)
-        {
-            Add("groupBy", "Comma-separated group fields, outermost first, e.g. groupBy=region,category.");
-            Add("groupKeys", "The already-expanded drill-down path, e.g. groupKeys=EMEA.");
-        }
-        if (metadata.Keyset)
-            Add("after", "Keyset cursor from a previous response's nextCursor — seeks past that row instead of Skip.");
     }
 }
+
+builder.Services.AddSwaggerGen(o => o.OperationFilter<InanduGridSwaggerFilter>());
 ```
 
 `Microsoft.OpenApi` 2.x renamed/moved several types from the old `Microsoft.OpenApi.Models`
-namespace — the snippet above targets `Swashbuckle.AspNetCore` 10.x / `Microsoft.OpenApi` 2.x, the
-versions the playground pins. If you're on an older Swashbuckle, `Microsoft.OpenApi.Models` and a
-plain `string` schema type (`"integer"`, `"string"`) are the pre-2.x equivalents.
+namespace — the snippets target `Swashbuckle.AspNetCore` 10.x / `Microsoft.OpenApi` 2.x (and
+`Microsoft.AspNetCore.OpenApi` 10.x), the versions the playground and the tests pin. On an older
+Swashbuckle, `Microsoft.OpenApi.Models` and a plain `string` schema type (`"integer"`,
+`"string"`) are the pre-2.x equivalents. The [playground](../playground/Inandu.Grid.Extensions.Playground/InanduGridOpenApi.cs)
+uses the Swashbuckle version.
 
-## 3. Wire it up
-
-```csharp
-builder.Services.AddSwaggerGen(o => o.OperationFilter<InanduGridSwaggerFilter>());
-
-app.MapGet("/api/products", (HttpRequest request) => /* ... */)
-    .WithMetadata(new InanduGridEndpoint());
-
-app.MapInanduGrid("/api/catalog", products, o => { o.EnableKeyset = true; })
-    .WithMetadata(new InanduGridEndpoint { Keyset = true }); // MapInanduGrid returns a RouteHandlerBuilder, so this chains directly
-```
-
-That's it — every `.WithMetadata(new InanduGridEndpoint())` endpoint now lists `page`, `sort`, `q`,
-etc. as real, documented, triable-from-Swagger-UI query parameters. An MVC controller action bound
-via `[FromInanduGrid] InanduGridRequest request` doesn't need any of this — ASP.NET Core's binder
-already exposes `InanduGridRequest`'s own properties to Swashbuckle the normal way.
+An MVC controller action bound via `[FromInanduGrid] InanduGridRequest request` doesn't need any of
+this: ASP.NET Core's binder already exposes `InanduGridRequest`'s own properties to the generator
+the normal way.

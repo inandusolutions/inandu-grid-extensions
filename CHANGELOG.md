@@ -6,6 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- OpenAPI: `MapInanduGrid`, `MapInanduGridGrouped` and `MapInanduGridDistinct` now tag their endpoints with the new
+  `InanduGridEndpoint` metadata, and `InanduGridOpenApi.Parameters(...)` returns the query parameters they accept, so a
+  Swashbuckle filter or a `Microsoft.AspNetCore.OpenApi` `IOpenApiOperationTransformer` can document them in a few
+  lines. A tested transformer for .NET 10 is in docs/openapi-swagger.md. Hand-wired endpoints add
+  `.WithMetadata(new InanduGridEndpoint())`.
+
 _Nothing yet_
 
 ## [0.5.0] - 2026-11-03

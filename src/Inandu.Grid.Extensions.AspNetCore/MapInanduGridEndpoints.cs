@@ -29,7 +29,8 @@ public static class MapInanduGridEndpoints
                 return Run(() => source(ctx).ToInanduGrid(InanduGridOptions.For(request, configure)));
             })
             .Produces<InanduGridResult<T>>()
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .WithMetadata(new InanduGridEndpoint { Keyset = KeysetEnabled(configure) });
 
     /// <summary>GET endpoint for server-side grouping (<c>?groupBy=…&amp;groupKeys=…</c>).</summary>
     public static RouteHandlerBuilder MapInanduGridGrouped<T>(
@@ -40,7 +41,8 @@ public static class MapInanduGridEndpoints
                 return Run(() => source(ctx).ToInanduGridGrouped(InanduGridOptions.For(request, configure)));
             })
             .Produces<InanduGridGroupedResult<T>>()
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .WithMetadata(new InanduGridEndpoint { Grouped = true });
 
     /// <inheritdoc cref="MapInanduGridGrouped{T}(IEndpointRouteBuilder, string, Func{HttpContext, IEnumerable{T}}, Action{InanduGridOptions}?)"/>
     public static RouteHandlerBuilder MapInanduGridGrouped<T>(
@@ -72,13 +74,35 @@ public static class MapInanduGridEndpoints
                 return Run(() => source(ctx).ToInanduGridDistinct(field, InanduGridOptions.For(request, configure)));
             })
             .Produces<InanduGridDistinctResult>()
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .WithMetadata(new InanduGridEndpoint { Distinct = true });
 
     /// <inheritdoc cref="MapInanduGridDistinct{T}(IEndpointRouteBuilder, string, Func{HttpContext, IEnumerable{T}}, Func{HttpContext, string?}?, Action{InanduGridOptions}?)"/>
     public static RouteHandlerBuilder MapInanduGridDistinct<T>(
         this IEndpointRouteBuilder endpoints, string pattern, IEnumerable<T> source,
         Func<HttpContext, string?>? fieldSelector = null, Action<InanduGridOptions>? configure = null)
         => endpoints.MapInanduGridDistinct(pattern, _ => source, fieldSelector, configure);
+
+    /// <summary>Whether <paramref name="configure"/> turns keyset paging on (probed once, at mapping time).</summary>
+    private static bool KeysetEnabled(Action<InanduGridOptions>? configure)
+    {
+        if (configure is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var probe = new InanduGridOptions();
+            configure(probe);
+            return probe.EnableKeyset;
+        }
+        catch (Exception)
+        {
+            // A configure delegate that needs request state can't be probed; just don't advertise `after`.
+            return false;
+        }
+    }
 
     /// <summary>
     /// Runs the query and returns <c>200</c>, or — when the request is rejected (an unknown /

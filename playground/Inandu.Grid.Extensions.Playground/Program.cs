@@ -81,7 +81,7 @@ app.MapInanduGrid("/api/catalog", ProductStore.All, o =>
     o.EnableKeyset = true;
     o.Limits.MaxInListItems = 100;
 })
-.WithMetadata(new InanduGridEndpoint { Keyset = true });
+; // MapInanduGrid tags itself (keyset is detected from the options)
 
 // distinct values for a set-filter checklist: /api/products/distinct/category
 app.MapInanduGridDistinct("/api/products/distinct/{field}", ProductStore.All, configure: Configure);
