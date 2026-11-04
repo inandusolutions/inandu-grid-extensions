@@ -8,7 +8,8 @@
 | Param | Meaning |
 |---|---|
 | `groupBy` | Group fields, outermost first — `groupBy=region,category`. May be dotted paths. |
-| `groupKeys` | The already-expanded path for a drill-down — `groupKeys=EMEA` or `groupKeys=EMEA,2026`. Each value is matched with `eq` against the matching `groupBy` field. |
+| `groupKeys` | The already-expanded path for a drill-down — `groupKeys=EMEA` or `groupKeys=EMEA,2026`. Each value is matched with `eq` against the matching `groupBy` field. Keys that contain a comma, are empty or have edge whitespace need the repeated form below. |
+| `groupKeysEncoding` | `repeat` switches `groupKeys` to the repeated form. |
 
 Filters, free-text and the advanced filter all apply throughout. The first `sort` criterion orders
 the groups: a field of `count` orders by group size, anything else by the group key; ascending
@@ -32,6 +33,23 @@ GET /api/sales/groups?groupBy=region,product          -> { groups: [{key:"EMEA",
 GET …?groupBy=region,product&groupKeys=EMEA           -> { groups: [{key:"Widget",count:145}, …], isLeaf:false, level:1 }
 GET …?groupBy=region,product&groupKeys=EMEA,Widget    -> { rows:  [ …the 145 rows… ],             isLeaf:true,  level:2 }
 ```
+
+### Keys with commas, empty keys, padded keys
+
+The comma form splits on commas, trims each key and drops empty ones, so a group called `Smith, John`,
+an empty group, or a group named `" padded "` cannot be drilled into that way (the path would be wrong).
+Send `groupKeysEncoding=repeat` and repeat `groupKeys`, **one key per occurrence, taken exactly as is**:
+
+```
+GET ...?groupBy=name,region&groupKeys=Smith, John&groupKeysEncoding=repeat
+GET ...?groupBy=name,region&groupKeys=Smith, John&groupKeys=APAC&groupKeysEncoding=repeat
+GET ...?groupBy=name,region&groupKeys=&groupKeysEncoding=repeat                  # the group whose name is empty
+```
+
+URL-encode each value as usual (`groupKeys=Smith%2C%20John`). Without the marker nothing changes, so
+existing clients keep working. A server older than the release that introduced the marker ignores it and
+would split the key, so use the repeated form only against a server that supports it. `grid-pro` switches
+to it by itself, and only for a path that needs it.
 
 ```csharp
 var r = db.Sales.ToInanduGridGrouped(InanduGridOptions.FromQueryString(qs));

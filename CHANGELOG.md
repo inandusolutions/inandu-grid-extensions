@@ -8,6 +8,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `groupKeys` as a repeated parameter: with `groupKeysEncoding=repeat`, each `groupKeys` occurrence is one drill-down key
+  taken exactly as sent, so a group whose key contains a comma, is empty or has edge whitespace can be drilled into.
+  Without the marker the comma form is unchanged (split, trim, drop empties). See [docs/grouping.md](docs/grouping.md).
 - Diagnostics: every grid query (sync and `…Async`, rows / grouped / distinct) is reported through an
   `ActivitySource` and a `Meter` named `Inandu.Grid.Extensions` (`InanduGridDiagnostics.SourceName` /
   `MeterName`): one activity per query, an `inandu.grid.requests` counter and an

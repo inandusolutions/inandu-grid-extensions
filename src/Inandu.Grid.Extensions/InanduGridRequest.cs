@@ -100,6 +100,12 @@ public sealed class InanduGridRequest
     /// The already-expanded group path for a drill-down request — the <c>groupKeys</c> param
     /// (<c>groupKeys=EMEA</c> or <c>groupKeys=EMEA,2026</c>). Each value is matched with <c>eq</c>
     /// against the corresponding <see cref="GroupBy"/> field.
+    /// <para>
+    /// The comma form trims each key and drops empty ones, so a key with a comma, an empty key or a
+    /// padded key cannot be sent that way. Add <c>groupKeysEncoding=repeat</c> and repeat the param, one
+    /// key per occurrence, to send keys exactly as they are:
+    /// <c>?groupBy=name,region&amp;groupKeys=Smith, John&amp;groupKeys=EMEA&amp;groupKeysEncoding=repeat</c>.
+    /// </para>
     /// </summary>
     public IList<string> GroupKeys { get; set; } = new List<string>();
 
@@ -180,8 +186,11 @@ public sealed class InanduGridRequest
         }
 
         var request = new InanduGridRequest();
+        var all = pairs.Select(p => (p.Key, p.Value)).ToList();
+        var repeatedGroupKeys = all.Any(p => KeyIs(p.Key ?? string.Empty, "groupKeysEncoding")
+            && string.Equals(p.Value?.Trim(), "repeat", StringComparison.OrdinalIgnoreCase));
 
-        foreach (var (key, rawValue) in pairs.Select(p => (p.Key, p.Value)))
+        foreach (var (key, rawValue) in all)
         {
             if (string.IsNullOrEmpty(key))
             {
@@ -242,11 +251,23 @@ public sealed class InanduGridRequest
                     }
                 }
             }
+            else if (KeyIs(key, "groupKeysEncoding"))
+            {
+                // A marker read in the first pass above, not a filter.
+            }
             else if (KeyIs(key, "groupKeys"))
             {
-                foreach (var gk in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                if (repeatedGroupKeys)
                 {
-                    request.GroupKeys.Add(gk.Trim());
+                    // One key per occurrence, taken as-is: commas, empty values and padding survive.
+                    request.GroupKeys.Add(value);
+                }
+                else
+                {
+                    foreach (var gk in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        request.GroupKeys.Add(gk.Trim());
+                    }
                 }
             }
             else if (KeyIs(key, "aggregate") || KeyIs(key, "aggregates"))
