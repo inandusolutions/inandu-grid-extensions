@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Primitives;
 
 namespace Inandu.Grid.Extensions.AspNetCore;
@@ -17,8 +18,22 @@ namespace Inandu.Grid.Extensions.AspNetCore;
 /// </summary>
 public static class InanduGridBinding
 {
-    /// <summary>Binds from <paramref name="request"/> — JSON body when it is a JSON POST/PUT, else the query string.</summary>
-    public static async ValueTask<InanduGridRequest> FromHttpRequestAsync(HttpRequest request, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// The largest JSON body <see cref="FromHttpRequestAsync(HttpRequest, CancellationToken)"/> reads: 128 KB. A grid
+    /// request is a handful of short strings; the host's own default (30 MB on Kestrel) is far more than it needs.
+    /// </summary>
+    public const long DefaultMaxBodyBytes = 131_072;
+
+    /// <summary>Binds from <paramref name="request"/> — JSON body when it is a JSON POST/PUT, else the query string. A body over <see cref="DefaultMaxBodyBytes"/> is refused with 413.</summary>
+    public static ValueTask<InanduGridRequest> FromHttpRequestAsync(HttpRequest request, CancellationToken cancellationToken = default)
+        => FromHttpRequestAsync(request, DefaultMaxBodyBytes, cancellationToken);
+
+    /// <summary>
+    /// Binds like <see cref="FromHttpRequestAsync(HttpRequest, CancellationToken)"/> with your own cap on the JSON body
+    /// (<paramref name="maxBodyBytes"/>, or 0 to leave the host's limit alone). A larger body throws a
+    /// <see cref="BadHttpRequestException"/> with status 413, which ASP.NET Core turns into a 413 response.
+    /// </summary>
+    public static async ValueTask<InanduGridRequest> FromHttpRequestAsync(HttpRequest request, long maxBodyBytes, CancellationToken cancellationToken = default)
     {
         if (request is null)
         {
@@ -27,6 +42,21 @@ public static class InanduGridBinding
 
         if (HasJsonBody(request))
         {
+            if (maxBodyBytes > 0)
+            {
+                if (request.ContentLength > maxBodyBytes)
+                {
+                    throw new BadHttpRequestException($"The request body is larger than the {maxBodyBytes} bytes a grid request may have.", StatusCodes.Status413PayloadTooLarge);
+                }
+
+                // chunked bodies have no Content-Length: let the server stop reading at the cap instead
+                var feature = request.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>();
+                if (feature is { IsReadOnly: false } && (feature.MaxRequestBodySize is null || feature.MaxRequestBodySize > maxBodyBytes))
+                {
+                    feature.MaxRequestBodySize = maxBodyBytes;
+                }
+            }
+
             try
             {
                 var fromBody = await request.ReadFromJsonAsync<InanduGridRequest>(cancellationToken).ConfigureAwait(false);

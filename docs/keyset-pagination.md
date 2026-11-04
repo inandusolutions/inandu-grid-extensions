@@ -36,6 +36,12 @@ the usual reason to choose keyset.
   right after the rows already returned; following it always moves forward, and the sequence switches back to
   seeking as soon as a boundary key is non-null. This relies on the requests of one sequence being
   sequential with the same `sort` and filters.
+- **Nulls sort first when ascending and last when descending, on every database.** In keyset mode a nullable sort
+  key is ordered by "is it null" before its value, so the seek and `ORDER BY` agree whether the provider puts nulls
+  first (SQL Server, SQLite, MySQL) or last (PostgreSQL, Oracle). Before 0.7.0 rows with a null key that sorted after the
+  page boundary were never returned (descending on SQL Server / SQLite / MySQL, ascending on PostgreSQL). Plain offset
+  paging keeps the database's own null order, and an index on the column can still serve it; with a nullable key, keyset
+  mode adds the null test to `ORDER BY`, which an index may not cover.
 - Multi-column sort builds a compound seek:
   `f1 <dir> v1  OR  (f1 = v1 AND f2 <dir> v2)  OR  …`.
 - Over EF Core the seek is plain SQL; make sure the sort columns are indexed.

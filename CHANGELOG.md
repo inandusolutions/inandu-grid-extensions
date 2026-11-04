@@ -10,10 +10,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Three input-size limits, checked before the input costs anything: `Limits.MaxQueryTextLength` (free-text `q`,
-  default 200), `Limits.MaxFilterLength` (advanced `filter` JSON, default 20000) and `Limits.MaxQueryStringLength`
-  (raw string given to `FromQueryString`, default 32768). They follow `OnLimitExceeded` (trim, or reject with a 400).
-  An advanced filter above 256 KB is no longer parsed at all.
+- Six input-size limits, checked before the input costs anything: `Limits.MaxQueryTextLength` (free-text `q`,
+  default 200), `Limits.MaxFilterLength` (advanced `filter` JSON, default 20000), `Limits.MaxQueryStringLength`
+  (raw string given to `FromQueryString`, default 32768), `Limits.MaxCursorLength` (keyset `after`, default 4096; a
+  longer one is treated as an invalid cursor), `Limits.MaxValueLength` (one filter value, default 1000) and
+  `Limits.MaxFieldNameLength` (a field name in a sort, filter or group-by, default 128). They follow `OnLimitExceeded`
+  (trim, or reject with a 400). An advanced filter above 256 KB is no longer parsed at all.
+- The JSON body of a grid request is read at most 128 KB (`InanduGridBinding.DefaultMaxBodyBytes`) by the
+  `MapInanduGrid*` helpers and `[FromInanduGrid]`; a larger body gets a 413. A new overload,
+  `InanduGridBinding.FromHttpRequestAsync(request, maxBodyBytes, ct)`, sets another cap (`0` keeps the host's limit).
 - The `MapInanduGrid*` endpoints log a warning once, when they are mapped, if they keep the permissive default
   (`AllowUnconfiguredFields = true`), pointing to deny-by-default. Behaviour is unchanged.
 
@@ -24,6 +29,16 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Keyset paging no longer loses rows whose sort key is null. A null key was never returned when it sorted after the
+  page boundary (descending on SQL Server, SQLite and MySQL; ascending on PostgreSQL, also for text), so a walk over
+  a nullable `int?` descending visited 48 of 60 rows. Keyset mode now orders nulls first when ascending and last when
+  descending on every provider, and the seek follows that order. **Behaviour change:** in keyset mode a nullable key
+  adds a null test to `ORDER BY`, and on PostgreSQL ascending nulls now come first (they came last). See
+  [docs/keyset-pagination.md](docs/keyset-pagination.md).
+- A date without a time on the upper side of a range no longer drops the last day. `createdOn_lte=2026-06-30`,
+  the column filter's `to` and an advanced filter's `lte` were compared against midnight, so every row of that day was
+  missing on a `DateTime` / `DateTimeOffset` property. A bare `yyyy-MM-dd` now names the whole day (`lte` reads
+  `< next day`, `gt` reads `>= next day`). A value with a time is still an exact instant; `DateOnly` was already right.
 - Keyset paging over text no longer skips rows that differ only by case. The seek folded case (the filter default,
   `OrdinalIgnoreCase`) while the sort did not, so `a` and `A` were equal to the seek but ordered apart. The seek now
   orders text like the sort does: the CLR comparer in memory, the column's collation in a database.

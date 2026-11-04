@@ -77,6 +77,12 @@ Flat form — one param per condition, key is `{field}_{operator}`:
 | `lte` (`le`) | less than or equal | `createdOn_lte=2026-06-30` |
 | `in` | one of a comma list | `status_in=Active,Draft` |
 
+**A date without a time is a whole day.** On a `DateTime` / `DateTimeOffset` property, `yyyy-MM-dd` names the day, so
+`createdOn_lte=2026-06-30` includes every row of June 30 (it is read as `< 2026-07-01`) and `createdOn_gt=2026-06-30`
+starts at July 1. `gte` and `lt` read from the start of the day, as before. A value with a time
+(`2026-06-30T14:00:00`) is an exact instant, and `DateOnly` properties are unaffected. The grid's date-range filter
+sends `from` / `to` this way. Before 0.7.0 the day was read as its midnight, so the last day of a range was lost.
+
 **Values with commas, and the empty set.** `in` splits on commas, so a value such as `Smith, John` can't be
 sent that way. Add `inEncoding=repeat` and repeat the param, **one value per occurrence, taken exactly as is**
 (commas, empty values and padding survive):

@@ -294,6 +294,35 @@ public class EfCoreTests : IClassFixture<ShopFixture>
         Assert.True(page1.HasMore);
     }
 
+    [Theory]
+    [InlineData("stock,id")]
+    [InlineData("-stock,id")]
+    [InlineData("-stock,category,id")]
+    public async Task ToInanduGridAsync_keyset_over_a_nullable_key_visits_every_row_once(string sort)
+    {
+        await using var db = _fx.NewContext();
+        var seen = new List<int>();
+        string? cursor = null;
+
+        for (var guard = 0; guard < 100; guard++)
+        {
+            var qs = $"?pageSize=17&sort={sort}" + (cursor is null ? "" : $"&after={cursor}");
+            var page = await db.Widgets.AsNoTracking().ToInanduGridAsync(qs, o => o.EnableKeyset = true, cancellationToken: TestContext.Current.CancellationToken);
+            seen.AddRange(page.Data.Select(w => w.Id));
+
+            if (page.HasMore != true)
+            {
+                break;
+            }
+
+            cursor = page.NextCursor;
+        }
+
+        var total = await db.Widgets.CountAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(total, seen.Count);
+        Assert.Equal(total, seen.Distinct().Count());
+    }
+
     [Fact]
     public async Task ToInanduGridDistinctAsync_values_and_counts()
     {
