@@ -201,9 +201,9 @@ public static class InanduGridQueryableExtensions
         RequestGuard.Enforce(request, options);
 
         var filtered = ApplyFilterAndSort(source, options);
-        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize, skip) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
-        return new InanduGridQuery<T>(filtered, Paginate(filtered, page, pageSize), page, pageSize);
+        return new InanduGridQuery<T>(filtered, Paginate(filtered, skip, pageSize), page, pageSize);
     }
 
     /// <summary>Projected variant of <see cref="ApplyInanduGridQuery{T}(IQueryable{T}, InanduGridOptions?)"/>.</summary>
@@ -227,9 +227,9 @@ public static class InanduGridQueryableExtensions
         RequestGuard.Enforce(request, options);
 
         var projected = ApplyFilterAndSort(source, options).Select(selector);
-        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize, skip) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
-        return new InanduGridQuery<TResult>(projected, Paginate(projected, page, pageSize), page, pageSize);
+        return new InanduGridQuery<TResult>(projected, Paginate(projected, skip, pageSize), page, pageSize);
     }
 
     // ── internals shared with the grouping / EF Core paths ────────────────
@@ -258,16 +258,8 @@ public static class InanduGridQueryableExtensions
     internal static IQueryable<T> ApplyFilterAndSort<T>(IQueryable<T> source, InanduGridOptions options)
         => ExpressionBuilder.ApplySort(ApplyFilters(source, options), (options.Request ?? new InanduGridRequest()).Sort, options);
 
-    internal static IQueryable<T> Paginate<T>(IQueryable<T> source, int page, int pageSize)
-    {
-        var skip = (page - 1) * (long)pageSize;
-        if (skip < 0)
-        {
-            skip = 0;
-        }
-
-        return source.Skip((int)Math.Min(skip, int.MaxValue)).Take(pageSize);
-    }
+    internal static IQueryable<T> Paginate<T>(IQueryable<T> source, int skip, int pageSize)
+        => source.Skip(Math.Max(0, skip)).Take(pageSize);
 
     internal static IReadOnlyDictionary<string, object?>? ComputeAggregations<T>(IQueryable<T> filtered, InanduGridRequest request, InanduGridOptions options)
     {

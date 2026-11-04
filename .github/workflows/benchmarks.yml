@@ -29,7 +29,12 @@ jobs:
 
       - name: Run benchmarks (short job)
         working-directory: benchmarks/Inandu.Grid.Extensions.Benchmarks
-        run: dotnet run -c Release -f net8.0 -- --filter ${{ inputs.filter }} --job short --exporters json markdown
+        env:
+          # Passed through the environment, never interpolated into the script.
+          BENCH_FILTER: ${{ inputs.filter }}
+        run: |
+          set -f   # the glob(s) go to BenchmarkDotNet as-is, not expanded by the shell
+          dotnet run -c Release -f net8.0 -- --filter $BENCH_FILTER --job short --exporters json markdown
 
       - uses: actions/upload-artifact@v7
         with:

@@ -6,6 +6,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-04
+
+### Added
+
+- Three input-size limits, checked before the input costs anything: `Limits.MaxQueryTextLength` (free-text `q`,
+  default 200), `Limits.MaxFilterLength` (advanced `filter` JSON, default 20000) and `Limits.MaxQueryStringLength`
+  (raw string given to `FromQueryString`, default 32768). They follow `OnLimitExceeded` (trim, or reject with a 400).
+  An advanced filter above 256 KB is no longer parsed at all.
+- The `MapInanduGrid*` endpoints log a warning once, when they are mapped, if they keep the permissive default
+  (`AllowUnconfiguredFields = true`), pointing to deny-by-default. Behaviour is unchanged.
+
+### Fixed
+
+- `offset` / `limit` paging returned the wrong window when the offset was not a multiple of the limit
+  (`offset=30&limit=25` returned rows 25-49). It now returns exactly rows `[offset, offset + limit)`.
+- A keyset sequence sorted on a nullable column no longer loops forever at a null boundary key: the cursor
+  continues by offset until a non-null key is reached. Cursors from 0.6.x are still accepted.
+- Numeric filter operands no longer accept a thousands separator, so `1,5` is not read as `15` (it is now
+  an unparseable operand, ignored like any other).
+- A `+` in a query-string parameter *name* decodes to a space, as it already did in values.
+- The publish workflow only runs from a `v*` tag or `main`, takes its manual `version` input through the
+  environment and checks it is a SemVer version; the benchmarks workflow takes its `filter` input the same way.
+
 ## [0.6.1] - 2026-11-04
 
 ### Fixed
@@ -182,7 +205,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.4.1...v0.5.0

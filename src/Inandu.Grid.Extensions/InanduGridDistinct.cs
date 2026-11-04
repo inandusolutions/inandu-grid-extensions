@@ -73,7 +73,7 @@ public static class InanduGridDistinctExtensions
         var request = options.Request ?? new InanduGridRequest();
         RequestGuard.Enforce(request, options);
 
-        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize, skip) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
         if (!GroupGuard.IsDistinctAllowed(field, options, typeof(T)))
         {
             return new InanduGridDistinctResult { Field = field, Page = page, PageSize = pageSize };
@@ -82,7 +82,7 @@ public static class InanduGridDistinctExtensions
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
         var order = request.Sort.Count > 0 ? request.Sort[0] : null;
 
-        var (groups, total) = ExpressionBuilder.GroupLevel(filtered, field, options, page, pageSize, order);
+        var (groups, total) = ExpressionBuilder.GroupLevel(filtered, field, options, skip, pageSize, order);
 
         return new InanduGridDistinctResult
         {

@@ -84,7 +84,7 @@ public class RequestParsingEdgeCases
     [Fact]
     public void Offset_zero_maps_to_page_one()
     {
-        var (page, size) = InanduGridRequest.Parse("?offset=0&limit=25").ResolvePaging(25, 500);
+        var (page, size, _) = InanduGridRequest.Parse("?offset=0&limit=25").ResolvePaging(25, 500);
         Assert.Equal(1, page);
         Assert.Equal(25, size);
     }
@@ -92,7 +92,7 @@ public class RequestParsingEdgeCases
     [Fact]
     public void Limit_zero_falls_back_to_page_pagesize()
     {
-        var (page, size) = new InanduGridRequest { Offset = 100, Limit = 0, Page = 4, PageSize = 10 }.ResolvePaging(25, 500);
+        var (page, size, _) = new InanduGridRequest { Offset = 100, Limit = 0, Page = 4, PageSize = 10 }.ResolvePaging(25, 500);
         Assert.Equal(4, page);
         Assert.Equal(10, size);
     }
@@ -223,7 +223,7 @@ public class ResultAndOptionsTests
     [Fact]
     public void DefaultPageSize_is_used_and_clamped_by_MaxPageSize()
     {
-        var (_, size) = new InanduGridRequest().ResolvePaging(defaultPageSize: 1000, maxPageSize: 100);
+        var (_, size, _) = new InanduGridRequest().ResolvePaging(defaultPageSize: 1000, maxPageSize: 100);
         Assert.Equal(100, size);
     }
 

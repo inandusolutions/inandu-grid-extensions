@@ -176,7 +176,26 @@ public sealed class InanduGridOptions
 
     /// <summary>Options with <see cref="Request"/> parsed from <paramref name="queryString"/>.</summary>
     public static InanduGridOptions FromQueryString(string? queryString, Action<InanduGridOptions>? configure = null)
-        => For(InanduGridRequest.Parse(queryString), configure);
+    {
+        // Options first, so InanduGridLimits.MaxQueryStringLength can be checked before the string is split and parsed.
+        var options = For(new InanduGridRequest(), configure);
+        var max = options.Limits.MaxQueryStringLength;
+
+        if (queryString is not null && queryString.Length > max)
+        {
+            if (options.OnLimitExceeded == InanduGridLimitMode.Reject)
+            {
+                throw InanduGridRequestException.Single("query", $"the query string is {queryString.Length} characters; the limit is {max}.");
+            }
+
+            // Trim mode: keep whole parameters only, so no value is cut in half.
+            var cut = queryString.LastIndexOf('&', Math.Max(0, max - 1), Math.Min(queryString.Length, max));
+            queryString = cut > 0 ? queryString.Substring(0, cut) : string.Empty;
+        }
+
+        options.Request = InanduGridRequest.Parse(queryString);
+        return options;
+    }
 
     /// <summary>Options with <see cref="Request"/> parsed from a key/value collection.</summary>
     public static InanduGridOptions FromQuery(IEnumerable<KeyValuePair<string, string?>> pairs, Action<InanduGridOptions>? configure = null)

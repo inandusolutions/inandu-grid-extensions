@@ -72,7 +72,7 @@ public class ToInanduGridTests
     [Fact]
     public void ResolvePaging_from_offset_limit()
     {
-        var (page, size) = new InanduGridRequest { Offset = 60, Limit = 20 }.ResolvePaging(25, 500);
+        var (page, size, _) = new InanduGridRequest { Offset = 60, Limit = 20 }.ResolvePaging(25, 500);
         Assert.Equal(4, page);
         Assert.Equal(20, size);
     }

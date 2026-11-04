@@ -29,7 +29,7 @@ public class KeysetAllowListTests
 
         Assert.NotNull(result.NextCursor);
         Assert.Equal(idOnly.NextCursor, result.NextCursor);
-        Assert.Equal(1, KeysetCursor.Decode(result.NextCursor)!.Count);
+        Assert.Single(KeysetCursor.Decode(result.NextCursor)!);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class KeysetAllowListTests
         var idOnly = Many.ToInanduGrid("?pageSize=10&sort=id", Configure);
 
         Assert.Equal(idOnly.NextCursor, result.NextCursor);
-        Assert.Equal(1, KeysetCursor.Decode(result.NextCursor)!.Count);
+        Assert.Single(KeysetCursor.Decode(result.NextCursor)!);
     }
 
     [Fact]

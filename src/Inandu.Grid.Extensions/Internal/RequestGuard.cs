@@ -32,6 +32,25 @@ internal static class RequestGuard
             }
         }
 
+        // free-text search and the raw advanced-filter JSON
+        if (request.Query is { } queryText && queryText.Length > limits.MaxQueryTextLength)
+        {
+            Fail(errors, "q", $"the search text is {queryText.Length} characters; the limit is {limits.MaxQueryTextLength}.");
+            if (!reject)
+            {
+                request.Query = queryText.Substring(0, Math.Max(0, limits.MaxQueryTextLength));
+            }
+        }
+
+        if (request.Filter is { } filterJson && filterJson.Length > limits.MaxFilterLength)
+        {
+            Fail(errors, "filter", $"the advanced filter is {filterJson.Length} characters; the limit is {limits.MaxFilterLength}.");
+            if (!reject)
+            {
+                request.Filter = null;
+            }
+        }
+
         // flat conditions
         if (request.Conditions.Count > limits.MaxConditions)
         {

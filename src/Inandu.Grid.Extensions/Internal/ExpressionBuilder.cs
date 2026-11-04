@@ -121,7 +121,7 @@ internal static class ExpressionBuilder
     /// the group key; ascending unless the criterion is descending.
     /// </summary>
     public static (List<InanduGridGroup> Groups, int Total) GroupLevel<T>(
-        IQueryable<T> source, string field, InanduGridOptions options, int page, int pageSize, InanduGridSort? groupSort)
+        IQueryable<T> source, string field, InanduGridOptions options, int skip, int pageSize, InanduGridSort? groupSort)
     {
         var param = Expression.Parameter(typeof(T), "x");
         var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(field))
@@ -136,11 +136,11 @@ internal static class ExpressionBuilder
 
         return ((List<InanduGridGroup> Groups, int Total))core.Invoke(
             null,
-            new object?[] { source, keySelector, field, page, pageSize, groupSort })!;
+            new object?[] { source, keySelector, field, skip, pageSize, groupSort })!;
     }
 
     private static (List<InanduGridGroup> Groups, int Total) GroupLevelCore<T, TKey>(
-        IQueryable<T> source, Expression<Func<T, TKey>> keySelector, string field, int page, int pageSize, InanduGridSort? groupSort)
+        IQueryable<T> source, Expression<Func<T, TKey>> keySelector, string field, int skip, int pageSize, InanduGridSort? groupSort)
     {
         var grouped = source.GroupBy(keySelector).Select(g => new GroupCount<TKey> { Key = g.Key, Count = g.Count() });
 
@@ -157,8 +157,7 @@ internal static class ExpressionBuilder
             _ => grouped.OrderBy(x => x.Key),
         };
 
-        var skip = Math.Max(0, (page - 1)) * (long)pageSize;
-        var pageRows = ordered.Skip((int)Math.Min(skip, int.MaxValue)).Take(pageSize).ToList();
+        var pageRows = ordered.Skip(skip).Take(pageSize).ToList();
 
         var groups = pageRows
             .Select(x => new InanduGridGroup { Field = field, Key = x.Key, Count = x.Count })

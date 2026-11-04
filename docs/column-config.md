@@ -74,6 +74,9 @@ when a cap is hit: **`Trim`** (default — quietly cut down to the cap) or **`Re
 | `MaxInListItems` | 500 |
 | `MaxGroupByLevels` | 5 |
 | `MaxAggregations` | 20 |
+| `MaxQueryTextLength` | 200 |
+| `MaxFilterLength` | 20000 |
+| `MaxQueryStringLength` | 32768 |
 
 ```csharp
 o.Limits.MaxConditions = 20;

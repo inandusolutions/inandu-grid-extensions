@@ -76,3 +76,42 @@ public class PagingTests
         Assert.All(result.Data, p => Assert.Equal(Status.Active, p.Status));
     }
 }
+
+/// <summary>The <c>offset</c>/<c>limit</c> block model returns exactly rows [offset, offset + limit).</summary>
+public class OffsetLimitWindowTests
+{
+    private static System.Collections.Generic.List<Product> Many => Sample.Many(100);
+
+    [Theory]
+    [InlineData(0, 25)]
+    [InlineData(25, 25)]
+    [InlineData(30, 25)]   // not a multiple of the limit
+    [InlineData(7, 10)]
+    [InlineData(95, 25)]   // window runs past the end
+    public void Returns_exactly_the_requested_window(int offset, int limit)
+    {
+        var result = Many.ToInanduGrid($"?sort=id&offset={offset}&limit={limit}");
+
+        var expected = System.Linq.Enumerable.Range(1, 100).Skip(offset).Take(limit);
+        Assert.Equal(expected, System.Linq.Enumerable.Select(result.Data, p => p.Id));
+    }
+
+    [Fact]
+    public void Consecutive_unaligned_blocks_neither_overlap_nor_leave_gaps()
+    {
+        var first = Many.ToInanduGrid("?sort=id&offset=0&limit=30");
+        var second = Many.ToInanduGrid("?sort=id&offset=30&limit=30");
+        var third = Many.ToInanduGrid("?sort=id&offset=60&limit=30");
+
+        var all = System.Linq.Enumerable.Select(first.Data.Concat(second.Data).Concat(third.Data), p => p.Id);
+        Assert.Equal(System.Linq.Enumerable.Range(1, 90), all);
+    }
+
+    [Fact]
+    public void Page_in_the_result_is_the_page_the_window_starts_in()
+    {
+        var result = Many.ToInanduGrid("?sort=id&offset=30&limit=25");
+
+        Assert.Equal(2, result.Page);
+    }
+}

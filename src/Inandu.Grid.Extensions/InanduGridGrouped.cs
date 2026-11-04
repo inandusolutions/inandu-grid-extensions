@@ -84,7 +84,7 @@ public static class InanduGridGroupedExtensions
         var request = options.Request ?? new InanduGridRequest();
         RequestGuard.Enforce(request, options);
         GroupGuard.EnforceGroupBy(request, options, typeof(T));
-        var (page, pageSize) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
+        var (page, pageSize, skip) = request.ResolvePaging(options.DefaultPageSize, options.MaxPageSize);
 
         var filtered = InanduGridQueryableExtensions.ApplyFilters(source, options);
 
@@ -110,7 +110,7 @@ public static class InanduGridGroupedExtensions
         {
             var sorted = ExpressionBuilder.ApplySort(filtered, request.Sort, options);
             var rowTotal = sorted.Count();
-            var rows = InanduGridQueryableExtensions.Paginate(sorted, page, pageSize).ToList();
+            var rows = InanduGridQueryableExtensions.Paginate(sorted, skip, pageSize).ToList();
 
             return new InanduGridGroupedResult<T>
             {
@@ -124,7 +124,7 @@ public static class InanduGridGroupedExtensions
         }
 
         var groupSort = request.Sort.Count > 0 ? request.Sort[0] : null;
-        var (groups, groupTotal) = ExpressionBuilder.GroupLevel(filtered, request.GroupBy[level], options, page, pageSize, groupSort);
+        var (groups, groupTotal) = ExpressionBuilder.GroupLevel(filtered, request.GroupBy[level], options, skip, pageSize, groupSort);
 
         return new InanduGridGroupedResult<T>
         {
