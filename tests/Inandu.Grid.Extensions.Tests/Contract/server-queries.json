@@ -223,10 +223,7 @@
           "name": {
             "text": ""
           },
-          "age": {},
-          "tag": {
-            "values": []
-          }
+          "age": {}
         },
         "filterQuery": ""
       },
@@ -237,6 +234,84 @@
         "sort": [],
         "q": null,
         "conditions": []
+      }
+    },
+    {
+      "name": "set filter value with a comma uses the repeat form",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "status": {
+            "values": [
+              "Smith, John",
+              "Ann"
+            ]
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&status_in=Smith%2C+John&status_in=Ann&inEncoding=repeat",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "status in Smith, John,Ann"
+        ]
+      }
+    },
+    {
+      "name": "set filter value that is empty uses the repeat form",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "status": {
+            "values": [
+              "",
+              "Ann"
+            ]
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&status_in=&status_in=Ann&inEncoding=repeat",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "status in ,Ann"
+        ]
+      }
+    },
+    {
+      "name": "an empty set filter matches nothing",
+      "query": {
+        "page": 0,
+        "pageSize": 25,
+        "sortCriteria": [],
+        "filterValues": {
+          "tag": {
+            "values": []
+          }
+        },
+        "filterQuery": ""
+      },
+      "queryString": "page=1&pageSize=25&tag_none=1",
+      "parsed": {
+        "page": 1,
+        "pageSize": 25,
+        "sort": [],
+        "q": null,
+        "conditions": [
+          "tag in "
+        ]
       }
     },
     {
