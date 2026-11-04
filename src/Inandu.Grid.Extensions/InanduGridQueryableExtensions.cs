@@ -33,6 +33,9 @@ public static class InanduGridQueryableExtensions
     /// <c>Inandu.Grid.Extensions.EntityFrameworkCore</c>'s <c>ToInanduGridAsync</c>.
     /// </summary>
     public static InanduGridResult<T> ToInanduGrid<T>(this IQueryable<T> source, InanduGridOptions? options = null)
+        => InanduGridDiagnostics.Run(InanduGridDiagnostics.Query, () => ToInanduGridCore(source, options), r => r.Total);
+
+    private static InanduGridResult<T> ToInanduGridCore<T>(IQueryable<T> source, InanduGridOptions? options = null)
     {
         if (source is null)
         {
@@ -99,6 +102,12 @@ public static class InanduGridQueryableExtensions
     /// <inheritdoc cref="ToInanduGrid{TSource, TResult}(IEnumerable{TSource}, Expression{Func{TSource, TResult}}, InanduGridOptions?)"/>
     public static InanduGridResult<TResult> ToInanduGrid<TSource, TResult>(
         this IQueryable<TSource> source,
+        Expression<Func<TSource, TResult>> selector,
+        InanduGridOptions? options = null)
+        => InanduGridDiagnostics.Run(InanduGridDiagnostics.Query, () => ToInanduGridCore(source, selector, options), r => r.Total);
+
+    private static InanduGridResult<TResult> ToInanduGridCore<TSource, TResult>(
+        IQueryable<TSource> source,
         Expression<Func<TSource, TResult>> selector,
         InanduGridOptions? options = null)
     {

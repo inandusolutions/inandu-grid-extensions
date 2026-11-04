@@ -71,6 +71,9 @@ public static class InanduGridGroupedExtensions
     /// rows of that group. Filters, free-text and the advanced filter all apply throughout.
     /// </summary>
     public static InanduGridGroupedResult<T> ToInanduGridGrouped<T>(this IQueryable<T> source, InanduGridOptions? options = null)
+        => InanduGridDiagnostics.Run(InanduGridDiagnostics.Grouped, () => ToInanduGridGroupedCore(source, options), r => r.Total);
+
+    private static InanduGridGroupedResult<T> ToInanduGridGroupedCore<T>(IQueryable<T> source, InanduGridOptions? options = null)
     {
         if (source is null)
         {

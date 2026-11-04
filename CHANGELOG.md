@@ -8,13 +8,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Diagnostics: every grid query (sync and `…Async`, rows / grouped / distinct) is reported through an
+  `ActivitySource` and a `Meter` named `Inandu.Grid.Extensions` (`InanduGridDiagnostics.SourceName` /
+  `MeterName`): one activity per query, an `inandu.grid.requests` counter and an
+  `inandu.grid.request.duration` histogram, tagged with the operation and the outcome
+  (`ok` / `rejected` / `error`). Field names, filter values and row data are never recorded. See
+  [docs/diagnostics.md](docs/diagnostics.md).
 - OpenAPI: `MapInanduGrid`, `MapInanduGridGrouped` and `MapInanduGridDistinct` now tag their endpoints with the new
   `InanduGridEndpoint` metadata, and `InanduGridOpenApi.Parameters(...)` returns the query parameters they accept, so a
   Swashbuckle filter or a `Microsoft.AspNetCore.OpenApi` `IOpenApiOperationTransformer` can document them in a few
   lines. A tested transformer for .NET 10 is in docs/openapi-swagger.md. Hand-wired endpoints add
   `.WithMetadata(new InanduGridEndpoint())`.
-
-_Nothing yet_
 
 ## [0.5.0] - 2026-11-03
 

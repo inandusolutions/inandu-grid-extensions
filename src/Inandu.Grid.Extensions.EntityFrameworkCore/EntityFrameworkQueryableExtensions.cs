@@ -23,7 +23,11 @@ public static class InanduGridEntityFrameworkExtensions
     /// including keyset paging (<c>after</c>) and the cost guard. Aggregate totals (<c>aggregate=</c>)
     /// are computed with a small set of blocking scalar queries.
     /// </summary>
-    public static async Task<InanduGridResult<T>> ToInanduGridAsync<T>(
+    public static Task<InanduGridResult<T>> ToInanduGridAsync<T>(
+        this IQueryable<T> source, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
+        => InanduGridDiagnostics.RunAsync(InanduGridDiagnostics.Query, () => ToInanduGridAsyncCore(source, options, cancellationToken), r => r.Total);
+
+    private static async Task<InanduGridResult<T>> ToInanduGridAsyncCore<T>(
         this IQueryable<T> source, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (source is null)
@@ -68,7 +72,14 @@ public static class InanduGridEntityFrameworkExtensions
     /// Applies the request, sorting/filtering on <typeparamref name="TSource"/>, then projects the
     /// page with <paramref name="selector"/> — asynchronously.
     /// </summary>
-    public static async Task<InanduGridResult<TResult>> ToInanduGridAsync<TSource, TResult>(
+    public static Task<InanduGridResult<TResult>> ToInanduGridAsync<TSource, TResult>(
+        this IQueryable<TSource> source,
+        Expression<Func<TSource, TResult>> selector,
+        InanduGridOptions? options = null,
+        CancellationToken cancellationToken = default)
+        => InanduGridDiagnostics.RunAsync(InanduGridDiagnostics.Query, () => ToInanduGridAsyncCore(source, selector, options, cancellationToken), r => r.Total);
+
+    private static async Task<InanduGridResult<TResult>> ToInanduGridAsyncCore<TSource, TResult>(
         this IQueryable<TSource> source,
         Expression<Func<TSource, TResult>> selector,
         InanduGridOptions? options = null,
@@ -113,7 +124,11 @@ public static class InanduGridEntityFrameworkExtensions
     /// Server-side grouping with lazy drill-down, asynchronously — the group-level aggregation is a
     /// single <c>GROUP BY</c> query, the leaf level a normal paged query.
     /// </summary>
-    public static async Task<InanduGridGroupedResult<T>> ToInanduGridGroupedAsync<T>(
+    public static Task<InanduGridGroupedResult<T>> ToInanduGridGroupedAsync<T>(
+        this IQueryable<T> source, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
+        => InanduGridDiagnostics.RunAsync(InanduGridDiagnostics.Grouped, () => ToInanduGridGroupedAsyncCore(source, options, cancellationToken), r => r.Total);
+
+    private static async Task<InanduGridGroupedResult<T>> ToInanduGridGroupedAsyncCore<T>(
         this IQueryable<T> source, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (source is null)
@@ -192,7 +207,11 @@ public static class InanduGridEntityFrameworkExtensions
     // ── distinct values ─────────────────────────────────────────────────
 
     /// <summary>A column's distinct values + row counts, asynchronously — see <c>ToInanduGridDistinct</c>.</summary>
-    public static async Task<InanduGridDistinctResult> ToInanduGridDistinctAsync<T>(
+    public static Task<InanduGridDistinctResult> ToInanduGridDistinctAsync<T>(
+        this IQueryable<T> source, string field, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
+        => InanduGridDiagnostics.RunAsync(InanduGridDiagnostics.Distinct, () => ToInanduGridDistinctAsyncCore(source, field, options, cancellationToken), r => r.Total);
+
+    private static async Task<InanduGridDistinctResult> ToInanduGridDistinctAsyncCore<T>(
         this IQueryable<T> source, string field, InanduGridOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (source is null)
