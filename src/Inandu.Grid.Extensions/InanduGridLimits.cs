@@ -43,6 +43,22 @@ public sealed class InanduGridLimits
     /// <summary>Maximum length of the advanced <c>filter</c> JSON. Default 20000.</summary>
     public int MaxFilterLength { get; set; } = 20_000;
 
+    /// <summary>
+    /// Maximum length of the keyset cursor (<c>after</c>), checked before it is decoded. A cursor holds the sort-key
+    /// values of one row, so it is short; over the limit it is treated as invalid (trim) or rejected. Default 4096.
+    /// </summary>
+    public int MaxCursorLength { get; set; } = 4096;
+
+    /// <summary>
+    /// Maximum length of one filter value: a condition value, an <c>in</c> item, a column filter's text / bounds / set
+    /// values. A <c>contains</c> over EF Core becomes a <c>LIKE '%…%'</c>, so a megabyte of text per condition is expensive.
+    /// Over the limit the condition is dropped (trim) or the request rejected. Default 1000.
+    /// </summary>
+    public int MaxValueLength { get; set; } = 1000;
+
+    /// <summary>Maximum length of a field name in a sort, filter or group-by. Default 128.</summary>
+    public int MaxFieldNameLength { get; set; } = 128;
+
     /// <summary>Maximum length of a raw query string given to <see cref="InanduGridOptions.FromQueryString"/>, checked before it is split and parsed. Default 32768.</summary>
     public int MaxQueryStringLength { get; set; } = 32_768;
 }

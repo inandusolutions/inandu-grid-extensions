@@ -19,6 +19,9 @@ internal static class RequestGuard
         var reject = options.OnLimitExceeded == InanduGridLimitMode.Reject;
         var errors = reject ? new Dictionary<string, string[]>() : null;
 
+        // How long each string is, before anything is decoded or compiled: the counts below say how many.
+        CapStringSizes(request, limits, reject, errors);
+
         // sort columns
         if (request.Sort.Count > limits.MaxSortColumns)
         {
@@ -148,6 +151,92 @@ internal static class RequestGuard
         {
             throw new InanduGridRequestException("The grid request exceeds one or more limits.", errors);
         }
+    }
+
+    private static void CapStringSizes(InanduGridRequest request, InanduGridLimits limits, bool reject, Dictionary<string, string[]>? errors)
+    {
+        if (request.After is { } after && after.Length > limits.MaxCursorLength)
+        {
+            Fail(errors, "after", $"the cursor is {after.Length} characters; the limit is {limits.MaxCursorLength}.");
+            if (!reject)
+            {
+                request.After = null; // as invalid as any cursor that does not decode: the first page
+            }
+        }
+
+        for (var i = request.Sort.Count - 1; i >= 0; i--)
+        {
+            if (request.Sort[i]?.Field is { } sortField && sortField.Length > limits.MaxFieldNameLength)
+            {
+                Fail(errors, "sort", $"a sort field name is {sortField.Length} characters; the limit is {limits.MaxFieldNameLength}.");
+                request.Sort.RemoveAt(i);
+            }
+        }
+
+        for (var i = request.GroupBy.Count - 1; i >= 0; i--)
+        {
+            if (request.GroupBy[i] is { } groupField && groupField.Length > limits.MaxFieldNameLength)
+            {
+                Fail(errors, "groupBy", $"a group-by field name is {groupField.Length} characters; the limit is {limits.MaxFieldNameLength}.");
+                request.GroupBy.RemoveAt(i);
+            }
+        }
+
+        for (var i = request.GroupKeys.Count - 1; i >= 0; i--)
+        {
+            if (request.GroupKeys[i] is { } key && key.Length > limits.MaxValueLength)
+            {
+                Fail(errors, "groupKeys", $"a group key is {key.Length} characters; the limit is {limits.MaxValueLength}.");
+                request.GroupKeys.RemoveAt(i);
+            }
+        }
+
+        for (var i = request.Conditions.Count - 1; i >= 0; i--)
+        {
+            var c = request.Conditions[i];
+            if (c.Field.Length > limits.MaxFieldNameLength)
+            {
+                Fail(errors, "filter", $"a filter field name is {c.Field.Length} characters; the limit is {limits.MaxFieldNameLength}.");
+                request.Conditions.RemoveAt(i);
+                continue;
+            }
+
+            if (c.Value is string text)
+            {
+                if (text.Length > limits.MaxValueLength)
+                {
+                    Fail(errors, $"filter.{c.Field}", $"the value for '{c.Field}' is {text.Length} characters; the limit is {limits.MaxValueLength}.");
+                    request.Conditions.RemoveAt(i);
+                }
+            }
+            else if (c.Value is IEnumerable items && c.Value is not string)
+            {
+                var all = items.Cast<object?>().ToList();
+                var kept = all.Where(v => v is not string s || s.Length <= limits.MaxValueLength).ToList();
+                if (kept.Count != all.Count)
+                {
+                    Fail(errors, $"filter.{c.Field}", $"{all.Count - kept.Count} value(s) for '{c.Field}' are longer than {limits.MaxValueLength} characters.");
+                    request.Conditions[i] = new FilterCondition(c.Field, c.Operator, kept);
+                }
+            }
+        }
+
+        foreach (var key in request.ColumnFilters.Keys.ToList())
+        {
+            var filter = request.ColumnFilters[key];
+            var tooLongName = key.Length > limits.MaxFieldNameLength;
+            var tooLongValue = filter is not null && (Long(filter.Text) || Long(filter.Min) || Long(filter.Max) || Long(filter.From) || Long(filter.To) || Long(filter.Bool)
+                || (filter.Values?.Any(v => Long(v)) ?? false));
+            if (tooLongName || tooLongValue)
+            {
+                Fail(errors, $"filter.{key}", tooLongName
+                    ? $"a column filter name is {key.Length} characters; the limit is {limits.MaxFieldNameLength}."
+                    : $"a value of the '{key}' filter is longer than {limits.MaxValueLength} characters.");
+                request.ColumnFilters.Remove(key);
+            }
+        }
+
+        bool Long(string? value) => value is not null && value.Length > limits.MaxValueLength;
     }
 
     private static (int Nodes, int Depth) Measure(AdvancedFilterNode node, int depth)

@@ -77,6 +77,9 @@ when a cap is hit: **`Trim`** (default — quietly cut down to the cap) or **`Re
 | `MaxQueryTextLength` | 200 |
 | `MaxFilterLength` | 20000 |
 | `MaxQueryStringLength` | 32768 |
+| `MaxCursorLength` | 4096 |
+| `MaxValueLength` | 1000 |
+| `MaxFieldNameLength` | 128 |
 
 ```csharp
 o.Limits.MaxConditions = 20;

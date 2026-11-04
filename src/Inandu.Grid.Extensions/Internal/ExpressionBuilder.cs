@@ -79,9 +79,25 @@ internal static class ExpressionBuilder
         return effective;
     }
 
+    /// <summary>True when the request is keyset-paged, so nulls must be ordered the same way on every provider.</summary>
+    internal static bool UsesKeysetOrdering(InanduGridOptions options)
+        => options.EnableKeyset || options.Request?.After is not null;
+
+    /// <summary>A reference type or <see cref="Nullable{T}"/>: a sort key that can be null.</summary>
+    internal static bool IsNullableKey(Type type)
+        => !type.IsValueType || Nullable.GetUnderlyingType(type) is not null;
+
+    /// <summary>
+    /// Orders by the requested sorts. In keyset mode a nullable key is first ordered by "is it null", so nulls
+    /// come <b>first</b> when ascending and <b>last</b> when descending on every provider: SQL Server, SQLite and
+    /// MySQL already do that, PostgreSQL and Oracle put nulls the other way round, and the seek predicate
+    /// (<see cref="BuildSeekPredicate{T}"/>) can only follow one convention. Without it, rows whose key is null
+    /// and that sort after the page boundary were never returned.
+    /// </summary>
     public static IQueryable<T> ApplySort<T>(IQueryable<T> source, IEnumerable<InanduGridSort> sorts, InanduGridOptions options)
     {
         var applied = false;
+        var keyset = UsesKeysetOrdering(options);
 
         foreach (var sort in EffectiveSorts<T>(sorts, options))
         {
@@ -89,6 +105,29 @@ internal static class ExpressionBuilder
             var resolved = PropertyResolver.Resolve(param, typeof(T), options.MapField(sort.Field))!;
 
             var (access, keyType) = resolved.Value;
+
+            if (keyset && IsNullableKey(keyType))
+            {
+                var isNull = Expression.Condition(
+                    Expression.Equal(access, Expression.Constant(null, keyType)),
+                    Expression.Constant(0),
+                    Expression.Constant(1));
+                var nullMethod = (applied, sort.IsDescending) switch
+                {
+                    (false, false) => nameof(Queryable.OrderBy),
+                    (false, true) => nameof(Queryable.OrderByDescending),
+                    (true, false) => nameof(Queryable.ThenBy),
+                    (true, true) => nameof(Queryable.ThenByDescending),
+                };
+                source = source.Provider.CreateQuery<T>(Expression.Call(
+                    typeof(Queryable),
+                    nullMethod,
+                    new[] { typeof(T), typeof(int) },
+                    source.Expression,
+                    Expression.Quote(Expression.Lambda(isNull, param))));
+                applied = true;
+            }
+
             var keySelector = Expression.Lambda(access, param);
             var method = (applied, sort.IsDescending) switch
             {
@@ -390,6 +429,12 @@ internal static class ExpressionBuilder
                 return null;
             }
 
+            // Descending puts nulls last (see ApplySort), so a null key is "after" any non-null boundary value.
+            if (sorts[i].IsDescending && IsNullableKey(memberTypes[i]))
+            {
+                strict = Expression.OrElse(strict, Expression.Equal(members[i], Expression.Constant(null, memberTypes[i])));
+            }
+
             Expression clause = strict;
             for (var j = 0; j < i; j++)
             {
@@ -550,6 +595,19 @@ internal static class ExpressionBuilder
                     return null;
                 }
 
+                // A date with no time ("2026-06-30") names a whole day. "<= that day" and "> that day" must be
+                // read against the end of the day, not against its midnight, or every row of the last day is lost.
+                if (IsCalendarDay(rawValue) && op is FilterOperator.LessThanOrEqual or FilterOperator.GreaterThan
+                    && (underlying == typeof(DateTime) || underlying == typeof(DateTimeOffset)))
+                {
+                    var next = NextDay(coerced);
+                    if (next is not null)
+                    {
+                        coerced = next;
+                        op = op == FilterOperator.LessThanOrEqual ? FilterOperator.LessThan : FilterOperator.GreaterThanOrEqual;
+                    }
+                }
+
                 return BuildComparison(member, memberType, underlying, coerced, op, ignoreCase);
             }
 
@@ -557,6 +615,34 @@ internal static class ExpressionBuilder
                 return null;
         }
     }
+
+    /// <summary>True for <c>yyyy-MM-dd</c> and nothing else (no time, no zone): a calendar day.</summary>
+    private static bool IsCalendarDay(object? raw)
+    {
+        if (raw is not string text || text.Length != 10)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < 10; i++)
+        {
+            var ok = i is 4 or 7 ? text[i] == '-' : text[i] is >= '0' and <= '9';
+            if (!ok)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>The same instant one day later, or null at the end of the representable range.</summary>
+    private static object? NextDay(object? value) => value switch
+    {
+        DateTime d when d.Date < DateTime.MaxValue.Date => d.AddDays(1),
+        DateTimeOffset o when o.UtcDateTime.Date < DateTime.MaxValue.Date => o.AddDays(1),
+        _ => null,
+    };
 
     private static Expression? BuildFreeText(ParameterExpression param, Type rootType, string? freeText, InanduGridOptions options)
     {

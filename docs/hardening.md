@@ -54,6 +54,14 @@ Silent is friendlier to stale clients; strict is easier to debug and to test. Pi
 | `Limits.MaxQueryTextLength` | 200 | length of the free-text `q` search |
 | `Limits.MaxFilterLength` | 20000 | length of the advanced `filter` JSON |
 | `Limits.MaxQueryStringLength` | 32768 | raw query string given to `FromQueryString`, checked before parsing |
+| `Limits.MaxCursorLength` | 4096 | length of the keyset cursor (`after`), checked before it is decoded; over it, the cursor is invalid |
+| `Limits.MaxValueLength` | 1000 | length of one filter value (a condition, an `in` item, a column filter's text / bounds / set values) |
+| `Limits.MaxFieldNameLength` | 128 | length of a field name in a sort, filter or group-by |
+
+A JSON body is read at most `InanduGridBinding.DefaultMaxBodyBytes` (128 KB) by the `MapInanduGrid*` helpers and
+`[FromInanduGrid]`; a larger one gets a `413`. Call `InanduGridBinding.FromHttpRequestAsync(request, maxBodyBytes, ct)`
+for another cap (`0` leaves the host's limit alone). The keyset cursor is Base64 of the last row's sort-key
+values: readable by the client, so do not sort a keyset on a column whose value must stay private.
 
 The `MapInanduGrid*` helpers also log a warning, once per mapped endpoint, when it keeps the permissive
 default (`AllowUnconfiguredFields = true`): see section 1.
