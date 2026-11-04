@@ -55,6 +55,15 @@ were built with — bump all three together.
 7. On nuget.org, confirm each listing shows both `.NET 8.0` and `.NET 10.0` under *Frameworks*, and
    that the companions' dependency on `Inandu.Grid.Extensions` pins the new version.
 
+## How the publish workflow is split
+
+`publish.yml` has three jobs. `build` (read-only token) checks the tag is a commit of `main`, restores, builds,
+tests and packs, and uploads the `.nupkg` files. `publish` (the only job with `id-token: write`, in the
+`nuget-publish` environment) restores nothing: it downloads those packages, logs in with NuGet trusted publishing and
+pushes them. `release` creates the GitHub Release. Add required reviewers under *Settings → Environments →
+nuget-publish*. Run it by hand from *Actions → Publish to NuGet* with `dry_run` ticked to rehearse a release from
+`main` (build, test and pack only).
+
 ## Notes
 
 - The **core** package has **no runtime dependencies**. `…EntityFrameworkCore` depends on
