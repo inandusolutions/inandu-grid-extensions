@@ -353,6 +353,8 @@ See **[docs/options.md](docs/options.md)**. Highlights: `DefaultPageSize`, `MaxP
 
 Supported .NET / EF Core / front-end versions: **[docs/compatibility.md](docs/compatibility.md)**.
 
+Traces and metrics (OpenTelemetry-ready): **[docs/diagnostics.md](docs/diagnostics.md)**.
+
 ## Build, test & benchmark
 
 ```bash

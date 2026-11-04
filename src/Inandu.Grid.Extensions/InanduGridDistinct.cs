@@ -55,6 +55,9 @@ public static class InanduGridDistinctExtensions
     /// by the value; paged like any other result.
     /// </summary>
     public static InanduGridDistinctResult ToInanduGridDistinct<T>(this IQueryable<T> source, string field, InanduGridOptions? options = null)
+        => InanduGridDiagnostics.Run(InanduGridDiagnostics.Distinct, () => ToInanduGridDistinctCore(source, field, options), r => r.Total);
+
+    private static InanduGridDistinctResult ToInanduGridDistinctCore<T>(IQueryable<T> source, string field, InanduGridOptions? options = null)
     {
         if (source is null)
         {
