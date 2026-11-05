@@ -84,6 +84,30 @@ public sealed class InanduGridOptions
     /// </summary>
     public bool EnableKeyset { get; set; }
 
+    /// <summary>
+    /// Protects the keyset cursor so a client can neither read the sort values in it nor forge one. <c>null</c> (the default)
+    /// keeps the cursor as plain base64 JSON, as before. Set it with <see cref="ProtectCursors(byte[], TimeSpan?)"/>, or with
+    /// <c>ProtectCursors(IDataProtectionProvider)</c> from <c>Inandu.Grid.Extensions.AspNetCore</c>. With a protector set, a plain
+    /// cursor (one from before it was turned on) is not accepted: it is handled as an invalid cursor.
+    /// </summary>
+    public IInanduGridCursorProtector? CursorProtector { get; set; }
+
+    /// <summary>
+    /// What to do with an <c>after</c> cursor that cannot be read (altered, expired, issued for another sort, or not protected while a
+    /// <see cref="CursorProtector"/> is set). <c>false</c> (the default) ignores it and serves the first page, as an unparseable cursor
+    /// always has; <c>true</c> throws <see cref="InanduGridRequestException"/> (a <c>400</c> from the ASP.NET Core helpers).
+    /// </summary>
+    public bool RejectInvalidCursors { get; set; }
+
+    /// <summary>Turns cursor protection on with AES-256-GCM and <paramref name="key"/> (32 secret bytes). See <see cref="InanduGridCursorProtector"/>.</summary>
+    /// <param name="key">Exactly 32 secret bytes, the same on every server.</param>
+    /// <param name="lifetime">How long a cursor stays valid; <c>null</c> never expires.</param>
+    public InanduGridOptions ProtectCursors(byte[] key, TimeSpan? lifetime = null)
+    {
+        CursorProtector = InanduGridCursorProtector.FromKey(key, lifetime);
+        return this;
+    }
+
     /// <summary>Caps on request size / depth — a guard against abusive queries. See <see cref="OnLimitExceeded"/>.</summary>
     public InanduGridLimits Limits { get; set; } = new();
 

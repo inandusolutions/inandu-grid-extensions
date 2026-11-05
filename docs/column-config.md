@@ -23,6 +23,7 @@ _products.ToInanduGrid(qs, o =>
 | `.NotFilterable()` | Disallow filtering entirely — and grouping / distinct values, which expose the same values. |
 | `.Sortable(bool)` | Allow / disallow sorting. |
 | `.Searchable(bool)` | Force this column in / out of free-text search. |
+| `.NoCursor()` | Keep this column out of keyset cursors: a sort that includes it is paged by offset. See [keyset-pagination](keyset-pagination.md#protecting-the-cursor). |
 | `.Label("…")` | Human label used in error messages. |
 
 **Grouping, distinct values and aggregates follow `CanFilter`.** `groupBy`, `ToInanduGridDistinct`

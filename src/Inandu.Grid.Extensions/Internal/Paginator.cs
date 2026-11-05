@@ -29,14 +29,17 @@ internal static class Paginator
         // Only the sorts ApplySort actually applied: a field the options hide must not reach the seek or the cursor.
         var sorts = ExpressionBuilder.EffectiveSorts<T>(request.Sort, options);
 
-        var wantsKeyset = sorts.Count > 0 && (request.After is not null || options.EnableKeyset);
+        // A column that must not appear in a cursor makes the whole request an offset one.
+        var cursorAllowed = sorts.All(s => options.FindColumn(s.Field)?.CursorAllowed != false);
+        var wantsKeyset = cursorAllowed && sorts.Count > 0 && (request.After is not null || options.EnableKeyset);
         if (!wantsKeyset)
         {
             return new PagePlan<T> { Query = InanduGridQueryableExtensions.Paginate(sorted, skip, pageSize), Page = page, PageSize = pageSize };
         }
 
-        var decoded = request.After is null ? null : KeysetCursor.Decode(request.After);
-        var cursorSkip = request.After is null ? null : KeysetCursor.DecodeSkip(request.After);
+        var after = request.After is null ? null : OpenCursor(request.After, sorts, options);
+        var decoded = after is null ? null : KeysetCursor.Decode(after);
+        var cursorSkip = after is null ? null : KeysetCursor.DecodeSkip(after);
 
         var seek = decoded is { Count: > 0 } values
             ? ExpressionBuilder.BuildSeekPredicate<T>(sorts, values, options)
@@ -68,8 +71,32 @@ internal static class Paginator
         return new PagePlan<T> { Query = query, Page = page, PageSize = pageSize, Keyset = true, Sorts = sorts, StartSkip = startSkip };
     }
 
+    /// <summary>What a protected cursor is only good for: the sort it was issued for.</summary>
+    internal static string BindingOf(IReadOnlyList<InanduGridSort> sorts)
+        => string.Join("|", sorts.Select(s => s.Field.ToLowerInvariant() + (s.Direction == SortDirection.Descending ? ":d" : ":a")));
+
+    /// <summary>The plain cursor, or <c>null</c> when it has to be treated as invalid (nothing to read, so the first page is served).</summary>
+    private static string? OpenCursor(string cursor, IReadOnlyList<InanduGridSort> sorts, InanduGridOptions options)
+    {
+        if (options.CursorProtector is not { } protector)
+        {
+            return cursor;
+        }
+
+        var plain = protector.Unprotect(cursor, BindingOf(sorts));
+        if (plain is null && options.RejectInvalidCursors)
+        {
+            throw InanduGridRequestException.Single("after", "the cursor is not valid (altered, expired or issued for another sort).");
+        }
+
+        return plain;
+    }
+
     private static IQueryable<T> OffsetOverfetch<T>(IQueryable<T> sorted, int skip, int pageSize)
         => sorted.Skip(Math.Max(0, skip)).Take(pageSize + 1);
+
+    private static string Seal(string cursor, IReadOnlyList<InanduGridSort> sorts, InanduGridOptions options)
+        => options.CursorProtector is { } protector ? protector.Protect(cursor, BindingOf(sorts)) : cursor;
 
     /// <summary>Trims a keyset over-fetch to the page and builds the next cursor / HasMore.</summary>
     public static (List<T> Rows, bool? HasMore, string? NextCursor) Finish<T>(
@@ -94,13 +121,13 @@ internal static class Paginator
                 var keys = reader(rows[^1]);
                 if (Array.IndexOf(keys, null) < 0)
                 {
-                    nextCursor = KeysetCursor.Encode(keys, nextSkip);
+                    nextCursor = Seal(KeysetCursor.Encode(keys, nextSkip), plan.Sorts, options);
                 }
                 else if (nextSkip is int resume && hasMore)
                 {
                     // A null boundary key can't be sought past: carry on by offset instead of
                     // handing back a cursor that would restart the sequence.
-                    nextCursor = KeysetCursor.EncodeSkip(resume);
+                    nextCursor = Seal(KeysetCursor.EncodeSkip(resume), plan.Sorts, options);
                 }
             }
         }

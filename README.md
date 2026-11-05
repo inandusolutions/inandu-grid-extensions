@@ -221,6 +221,10 @@ var page = db.Orders.ToInanduGrid("?pageSize=50&sort=-createdOn,id", o => o.Enab
 The sort columns are the cursor — include a unique tie-breaker (`,id`). A missing / stale cursor
 falls back to offset paging. See **[docs/keyset-pagination.md](docs/keyset-pagination.md)**.
 
+The cursor is readable by the client unless you protect it: `o.ProtectCursors(key)` (or `ProtectCursors(IDataProtectionProvider)`)
+encrypts and signs it, and `o.Column("salary").NoCursor()` keeps a column's values out of cursors entirely.
+See [Protecting the cursor](docs/keyset-pagination.md#protecting-the-cursor).
+
 ## Per-column configuration
 
 ```csharp

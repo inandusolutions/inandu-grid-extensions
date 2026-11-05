@@ -41,6 +41,13 @@ public sealed class InanduGridColumnConfig
     /// </summary>
     public bool? Searchable { get; internal set; }
 
+    /// <summary>
+    /// Whether the column may be a keyset sort key. A keyset cursor carries the sort values of the last row, so a column marked
+    /// <c>false</c> (<see cref="InanduGridColumnBuilder.NoCursor"/>) makes a request sorted by it use offset paging instead: no
+    /// <c>nextCursor</c> is issued and an <c>after</c> is ignored. Default <c>true</c>.
+    /// </summary>
+    public bool CursorAllowed { get; internal set; } = true;
+
     /// <summary>Whether <paramref name="op"/> is permitted on this column.</summary>
     public bool Allows(FilterOperator op)
         => CanFilter && (AllowedOperators is null || AllowedOperators.Contains(op));
@@ -89,6 +96,16 @@ public sealed class InanduGridColumnBuilder
     public InanduGridColumnBuilder Sortable(bool sortable = true)
     {
         _config.CanSort = sortable;
+        return this;
+    }
+
+    /// <summary>
+    /// Keep this column's values out of keyset cursors. A request sorted by it is paged by offset (no <c>nextCursor</c>), so its
+    /// values never travel in a cursor. For a column the client may sort by but must not read back (a salary, a score).
+    /// </summary>
+    public InanduGridColumnBuilder NoCursor()
+    {
+        _config.CursorAllowed = false;
         return this;
     }
 
