@@ -63,3 +63,7 @@ Maintainers only — see [`docs/publishing.md`](docs/publishing.md). In short: b
 `<Version>` in the three `src/**/*.csproj` in lock-step, move the CHANGELOG notes
 under a dated heading, then `git tag vX.Y.Z && git push --tags`. The
 `publish.yml` workflow packs and pushes to nuget.org via trusted publishing.
+
+## Differential corpus
+
+`tests/Inandu.Grid.Extensions.Tests/Contract/diff-corpus.json` is the canonical copy of the corpus that grid-core, grid-angular, grid-react and grid-vue also run (client side). `DifferentialCorpusTests` runs it through `ToInanduGrid` here (server side); every implementation must return the same ids in the same order. Do not edit `expectedIds` to make a test pass: a disagreement is a bug in one of the implementations. To add a case see `inandu-grid-core/CONTRIBUTING.md`; after merging a change to the file, bump `EXT_REF` in the `corpus-sync` job of the other four repos.
