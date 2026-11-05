@@ -6,6 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-05
+
 ### Tests
 
 - The EF Core tests now also run against **MySQL 8.4** (CI job `ef-mysql`, net8.0; locally they start a Testcontainers
@@ -245,7 +247,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.5.0...v0.6.0
