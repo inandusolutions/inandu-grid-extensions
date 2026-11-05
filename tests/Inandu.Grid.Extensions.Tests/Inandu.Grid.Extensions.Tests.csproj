@@ -30,6 +30,7 @@
   <ItemGroup>
     <None Update="Contract/server-queries.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Contract/advanced-filter-queries.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Contract/diff-corpus.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
