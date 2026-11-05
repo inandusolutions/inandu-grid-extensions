@@ -6,6 +6,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Tests
+
+- The EF Core tests now also run against **MySQL 8.4** (CI job `ef-mysql`, net8.0; locally they start a Testcontainers
+  container: `INANDU_TEST_PROVIDER=mysql`). The keyset null-ordering fix of 0.7.0 holds on MySQL.
+
+### Added
+
+- **Protected keyset cursors (opt-in).** `o.ProtectCursors(key, lifetime)` encrypts and authenticates the cursor with AES-256-GCM
+  (a client can no longer read the sort values in it or build one by hand), binds it to the `sort` it was issued for and, with a
+  `lifetime`, expires it. `Inandu.Grid.Extensions.AspNetCore` adds `o.ProtectCursors(IDataProtectionProvider, lifetime)` over
+  ASP.NET Core Data Protection, and `IInanduGridCursorProtector` / `o.CursorProtector` accept your own scheme. An unreadable
+  cursor (altered, expired, for another sort, or plain while protection is on) is ignored like an unparseable one; set
+  `o.RejectInvalidCursors = true` to answer `400` instead. Off by default: nothing changes until it is turned on.
+- **`Column(...).NoCursor()`**: keeps a column out of keyset cursors. A request sorted by it is served by offset paging (no
+  `nextCursor`), so its values never travel in a cursor. See
+  [Protecting the cursor](docs/keyset-pagination.md#protecting-the-cursor).
+
 ## [0.7.0] - 2026-11-04
 
 ### Added

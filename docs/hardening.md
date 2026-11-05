@@ -60,8 +60,10 @@ Silent is friendlier to stale clients; strict is easier to debug and to test. Pi
 
 A JSON body is read at most `InanduGridBinding.DefaultMaxBodyBytes` (128 KB) by the `MapInanduGrid*` helpers and
 `[FromInanduGrid]`; a larger one gets a `413`. Call `InanduGridBinding.FromHttpRequestAsync(request, maxBodyBytes, ct)`
-for another cap (`0` leaves the host's limit alone). The keyset cursor is Base64 of the last row's sort-key
-values: readable by the client, so do not sort a keyset on a column whose value must stay private.
+for another cap (`0` leaves the host's limit alone). The keyset cursor is, by default, Base64 of the last row's
+sort-key values: readable by the client. For a column whose value must stay private mark it `.NoCursor()`, and/or turn
+on `ProtectCursors(...)` to encrypt and sign every cursor: see
+[Protecting the cursor](keyset-pagination.md#protecting-the-cursor).
 
 The `MapInanduGrid*` helpers also log a warning, once per mapped endpoint, when it keeps the permissive
 default (`AllowUnconfiguredFields = true`): see section 1.
