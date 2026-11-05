@@ -16,13 +16,20 @@ version number; install matching versions.
 ### Databases
 
 The EF Core tests (`Inandu.Grid.Extensions.EntityFrameworkCore.Tests`) run in CI against **SQLite**
-(in memory), **SQL Server 2022** and **PostgreSQL 17**, on net8.0 and net10.0. The same 24 tests run on
-each provider: paging, sorting, filters, advanced filter, grouping, distinct, aggregates, keyset,
-deny-by-default and projections. Other providers (MySQL, Oracle) are not covered: test the endpoints you
+(in memory), **SQL Server 2022**, **PostgreSQL 17** and **MySQL 8.4**. SQLite, SQL Server and PostgreSQL run on net8.0 and
+net10.0; MySQL runs on net8.0 only, because the Pomelo provider has no EF Core 10 release yet. The same tests run on each
+provider: paging, sorting, filters, advanced filter, grouping, distinct, aggregates, keyset (including null sort keys),
+deny-by-default and projections. Other providers (Oracle, MariaDB) are not covered: test the endpoints you
 expose, in particular string filters (`Contains`, `StartsWith`), case sensitivity and grouping.
 
-Run them against your own server with `INANDU_TEST_PROVIDER` (`sqlserver` or `postgres`) and
-`INANDU_TEST_CONNECTION` (a server-level connection string whose user can create databases).
+Run them against your own server with `INANDU_TEST_PROVIDER` (`sqlserver`, `postgres` or `mysql`) and
+`INANDU_TEST_CONNECTION` (a server-level connection string whose user can create databases). For MySQL you can leave
+`INANDU_TEST_CONNECTION` out: the tests start a throw-away MySQL container with
+[Testcontainers](https://dotnet.testcontainers.org/) (Docker must be running):
+
+```
+INANDU_TEST_PROVIDER=mysql dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -f net8.0
+```
 
 ## Front ends
 

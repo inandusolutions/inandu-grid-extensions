@@ -101,3 +101,31 @@ jobs:
             8.x
             10.x
       - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release
+
+  # MySQL 8.4 (Pomelo targets EF Core 9, so this runs on net8.0 only). Locally the same tests start their own
+  # container with Testcontainers: INANDU_TEST_PROVIDER=mysql dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -f net8.0
+  ef-mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: pw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -ppw"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      INANDU_TEST_PROVIDER: mysql
+      INANDU_TEST_CONNECTION: Server=127.0.0.1;Port=3306;User ID=root;Password=pw
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+      - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release -f net8.0

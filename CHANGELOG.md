@@ -6,6 +6,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Tests
+
+- The EF Core tests now also run against **MySQL 8.4** (CI job `ef-mysql`, net8.0; locally they start a Testcontainers
+  container: `INANDU_TEST_PROVIDER=mysql`). The keyset null-ordering fix of 0.7.0 holds on MySQL.
+
 ### Added
 
 - **Protected keyset cursors (opt-in).** `o.ProtectCursors(key, lifetime)` encrypts and authenticates the cursor with AES-256-GCM

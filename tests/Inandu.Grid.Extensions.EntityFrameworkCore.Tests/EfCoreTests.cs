@@ -55,7 +55,7 @@ public sealed class ShopContext : DbContext
 
 /// <summary>
 /// One shared database, seeded once. SQLite in memory by default; set <c>INANDU_TEST_PROVIDER</c> to
-/// <c>sqlserver</c> or <c>postgres</c> and <c>INANDU_TEST_CONNECTION</c> to a server-level connection
+/// <c>sqlserver</c>, <c>postgres</c> or <c>mysql</c> (net8.0 only) and <c>INANDU_TEST_CONNECTION</c> to a server-level connection
 /// string (a user that can create databases) to run the same tests against a real server. Each fixture
 /// creates its own throw-away database and drops it on dispose.
 /// </summary>
@@ -63,6 +63,9 @@ public sealed class ShopFixture : IDisposable
 {
     private readonly DbConnection? _connection;
     private readonly Action? _cleanup;
+#if HAS_MYSQL
+    private readonly Testcontainers.MySql.MySqlContainer? _container;
+#endif
 
     public ShopFixture()
     {
@@ -108,8 +111,34 @@ public sealed class ShopFixture : IDisposable
                 break;
             }
 
+#if HAS_MYSQL
+            case "mysql":
+            {
+                // A server given in INANDU_TEST_CONNECTION (CI service container), otherwise a throw-away container (Testcontainers, needs Docker).
+                if (string.IsNullOrWhiteSpace(server))
+                {
+                    _container = new Testcontainers.MySql.MySqlBuilder("mysql:8.4").WithUsername("root").WithPassword("pw").Build();
+                    _container.StartAsync().GetAwaiter().GetResult();
+                    server = _container.GetConnectionString();
+                }
+
+                var admin = RequireConnection(server, provider);
+                Execute(() => new MySqlConnector.MySqlConnection(admin), $"CREATE DATABASE `{dbName}`");
+                var builder = new MySqlConnector.MySqlConnectionStringBuilder(admin) { Database = dbName };
+                OptionsBuilder = new DbContextOptionsBuilder<ShopContext>()
+                    .UseMySql(builder.ConnectionString, ServerVersion.AutoDetect(builder.ConnectionString)).Options;
+                _cleanup = () =>
+                {
+                    MySqlConnector.MySqlConnection.ClearAllPools();
+                    Execute(() => new MySqlConnector.MySqlConnection(admin), $"DROP DATABASE `{dbName}`");
+                    _container?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+                };
+                break;
+            }
+#endif
+
             default:
-                throw new InvalidOperationException($"Unknown INANDU_TEST_PROVIDER '{provider}' (sqlite, sqlserver, postgres).");
+                throw new InvalidOperationException($"Unknown INANDU_TEST_PROVIDER '{provider}' (sqlite, sqlserver, postgres, mysql on net8.0).");
         }
 
         using var db = new ShopContext(OptionsBuilder);
