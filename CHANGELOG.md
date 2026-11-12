@@ -6,6 +6,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **.NET 11 support.** All three packages now also target `net11.0` (built when the .NET 11 SDK is used), next to `net8.0`
+  and `net10.0`, which are unchanged. EF Core 11.0.0 is used on `net11.0`. Tests run on all three runtimes. The PostgreSQL
+  EF Core test provider is skipped on `net11.0` until Npgsql publishes an EF Core 11 release.
+
 ## [0.8.0] - 2026-11-05
 
 ### Tests

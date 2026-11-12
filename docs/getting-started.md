@@ -6,7 +6,7 @@
 dotnet add package Inandu.Grid.Extensions
 ```
 
-Multi-targets `net8.0` and `net10.0`.
+Multi-targets `net8.0`, `net10.0` and `net11.0`.
 
 ## 2. Expose an endpoint
 

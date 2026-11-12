@@ -34,9 +34,9 @@ reflection-based query languages. Keep it that way.
 ## Setup
 
 - **.NET 8 SDK** builds and tests the `net8.0` target.
-- **.NET 10 SDK** additionally builds `net10.0` — each `.csproj` adds that target
-  framework only when `$(NETCoreSdkVersion)` is ≥ 10. Release packages must be
-  produced with the .NET 10 SDK so the `.nupkg`s ship both.
+- **.NET 10 SDK** additionally builds `net10.0`, and the **.NET 11 SDK** also `net11.0` — each `.csproj` adds
+  those target frameworks only when `$(NETCoreSdkVersion)` is ≥ 10 / ≥ 11. Release packages must be
+  produced with the .NET 11 SDK so the `.nupkg`s ship all three.
 
 ```bash
 dotnet restore Inandu.Grid.Extensions.sln

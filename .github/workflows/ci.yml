@@ -18,19 +18,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up .NET (8 + 10)
+      - name: Set up .NET (8 + 10 + 11)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: |
             8.x
             10.x
+            11.x
 
       - run: dotnet restore Inandu.Grid.Extensions.sln
 
       - name: Build
         run: dotnet build Inandu.Grid.Extensions.sln -c Release --no-restore
 
-      - name: Test (net8.0 + net10.0)
+      - name: Test (net8.0 + net10.0 + net11.0)
         run: dotnet test Inandu.Grid.Extensions.sln -c Release --no-build
 
       - name: Vulnerable packages (direct + transitive)
@@ -43,7 +44,7 @@ jobs:
 
       - name: Pack (API compatibility check against the last release)
         # EnablePackageValidation + PackageValidationBaselineVersion fail the pack on a breaking
-        # public-API change. Needs the .NET 10 SDK so both target frameworks are produced.
+        # public-API change. Needs the .NET 11 SDK so all three target frameworks are produced.
         run: dotnet pack Inandu.Grid.Extensions.sln -c Release --no-build -o ./artifacts
   # The same EF Core tests as above, against real servers instead of in-memory SQLite. They pick the
   # provider from INANDU_TEST_PROVIDER / INANDU_TEST_CONNECTION (see ShopFixture); each fixture
@@ -72,7 +73,10 @@ jobs:
           dotnet-version: |
             8.x
             10.x
-      - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release
+            11.x
+      # Npgsql has no EF Core 11 release yet, so postgres runs on net8.0 and net10.0 only.
+      - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release -f net8.0
+      - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release -f net10.0
 
   ef-sqlserver:
     runs-on: ubuntu-latest
@@ -100,6 +104,7 @@ jobs:
           dotnet-version: |
             8.x
             10.x
+            11.x
       - run: dotnet test tests/Inandu.Grid.Extensions.EntityFrameworkCore.Tests -c Release
 
   # MySQL 8.4 (Pomelo targets EF Core 9, so this runs on net8.0 only). Locally the same tests start their own

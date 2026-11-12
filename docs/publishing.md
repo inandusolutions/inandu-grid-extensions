@@ -1,6 +1,6 @@
 # Publishing to NuGet
 
-Three free (MIT) packages ship to **nuget.org**, all multi-targeting `net8.0` and `net10.0`:
+Three free (MIT) packages ship to **nuget.org**, all multi-targeting `net8.0`, `net10.0` and `net11.0`:
 
 | Package | csproj |
 |---|---|
@@ -13,8 +13,8 @@ were built with — bump all three together.
 
 ## Prerequisites
 
-- **.NET 10 SDK** — the `.csproj` only adds the `net10.0` target framework when the building SDK is
-  ≥ 10 (`$(NETCoreSdkVersion)`). Packing with the .NET 8 SDK produces a **`net8.0`-only** package.
+- **.NET 11 SDK** — the `.csproj` only adds the `net10.0` / `net11.0` target frameworks when the building SDK is
+  ≥ 10 / ≥ 11 (`$(NETCoreSdkVersion)`). Packing with an older SDK produces a package without the newer targets.
 - A nuget.org API key with push rights for the `Inandu.Grid.Extensions` id
   (`https://www.nuget.org/account/apikeys`).
 
@@ -27,7 +27,7 @@ were built with — bump all three together.
 
    ```bash
    dotnet --version                     # 10.x
-   dotnet test  -c Release              # all green on net8.0 and net10.0
+   dotnet test  -c Release              # all green on net8.0, net10.0 and net11.0
    dotnet pack  Inandu.Grid.Extensions.sln -c Release -o ./artifacts
    ```
 
@@ -36,7 +36,7 @@ were built with — bump all three together.
    ```bash
    ls ./artifacts/*.nupkg
    unzip -l ./artifacts/Inandu.Grid.Extensions.X.Y.Z.nupkg
-   # expect: lib/net8.0/*.dll + *.xml, lib/net10.0/*.dll + *.xml, README.md, the .nuspec
+   # expect: lib/net8.0/*.dll + *.xml, lib/net10.0/*.dll + *.xml, lib/net11.0/*.dll + *.xml, README.md, the .nuspec
    ```
 
    Optionally smoke-test from a scratch project with a local feed
@@ -52,7 +52,7 @@ were built with — bump all three together.
 
    (`.snupkg` files are produced automatically — `IncludeSymbols` + `SymbolPackageFormat=snupkg`.)
 
-7. On nuget.org, confirm each listing shows both `.NET 8.0` and `.NET 10.0` under *Frameworks*, and
+7. On nuget.org, confirm each listing shows `.NET 8.0`, `.NET 10.0` and `.NET 11.0` under *Frameworks*, and
    that the companions' dependency on `Inandu.Grid.Extensions` pins the new version.
 
 ## How the publish workflow is split

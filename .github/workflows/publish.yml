@@ -67,12 +67,13 @@ jobs:
             exit 1
           fi
 
-      - name: Set up .NET (8 runtime + 10 SDK)
+      - name: Set up .NET (8 + 10 runtimes, 11 SDK)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: |
             8.x
             10.x
+            11.x
 
       - name: Resolve version
         id: ver
@@ -104,7 +105,7 @@ jobs:
       - name: Build
         run: dotnet build Inandu.Grid.Extensions.sln -c Release --no-restore
 
-      - name: Test (net8.0 + net10.0)
+      - name: Test (net8.0 + net10.0 + net11.0)
         run: dotnet test Inandu.Grid.Extensions.sln -c Release --no-build
 
       - name: Pack
