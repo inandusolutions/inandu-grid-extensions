@@ -66,7 +66,7 @@ Deliberately scoped to what the grid's wire contract needs, not a general-purpos
 | `Inandu.Grid.Extensions.EntityFrameworkCore` | `ToInanduGridAsync()` — `CountAsync` + `ToListAsync` |
 | `Inandu.Grid.Extensions.AspNetCore` | `[FromInanduGrid]` model binder + minimal-API binding |
 
-Multi-targets **`net8.0`** and **`net10.0`**.
+Multi-targets **`net8.0`**, **`net10.0`** and **`net11.0`**.
 
 ---
 
@@ -363,13 +363,13 @@ Traces and metrics (OpenTelemetry-ready): **[docs/diagnostics.md](docs/diagnosti
 
 ```bash
 dotnet build
-dotnet test                                                   # 165 tests, net8.0 + net10.0
+dotnet test                                                   # net8.0 + net10.0 + net11.0
 dotnet run -c Release --project benchmarks/Inandu.Grid.Extensions.Benchmarks
 ```
 
-The libraries multi-target `net8.0;net10.0` **when built with the .NET 10 SDK**; with only the
-.NET 8 SDK they build `net8.0` alone (see the condition in each `.csproj`). Produce release
-packages with the .NET 10 SDK so the `.nupkg`s ship both. See
+The libraries multi-target `net8.0;net10.0;net11.0` **when built with the .NET 11 SDK** (`net8.0;net10.0` with the .NET 10 SDK,
+`net8.0` alone with the .NET 8 SDK; see the condition in each `.csproj`). Produce release
+packages with the .NET 11 SDK so the `.nupkg`s ship all three. See
 [docs/publishing.md](docs/publishing.md).
 
 ### Benchmarks

@@ -6,6 +6,7 @@
          the .NET 10 SDK to ship both target frameworks. -->
     <TargetFrameworks>net8.0</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net8.0;net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '11.0'))">net8.0;net10.0;net11.0</TargetFrameworks>
 
     <RootNamespace>Inandu.Grid.Extensions</RootNamespace>
     <AssemblyName>Inandu.Grid.Extensions</AssemblyName>
@@ -17,7 +18,7 @@
     <!-- Fail the pack on a breaking public-API change against the last released version. -->
     <EnablePackageValidation>true</EnablePackageValidation>
     <PackageValidationBaselineVersion>0.6.0</PackageValidationBaselineVersion>
-    <Description>Server-side paging, sorting and filtering for the Inandu Grid components (@inandu-solutions/grid-angular, grid-react and grid-vue). A dependency-free ToInanduGrid() LINQ extension that turns an inandu-grid serverSide request into a single page of data plus the total count — with DTO projection, an advanced-filter (nested AND/OR) bridge and server-side grouping. Targets .NET 8 and .NET 10.</Description>
+    <Description>Server-side paging, sorting and filtering for the Inandu Grid components (@inandu-solutions/grid-angular, grid-react and grid-vue). A dependency-free ToInanduGrid() LINQ extension that turns an inandu-grid serverSide request into a single page of data plus the total count — with DTO projection, an advanced-filter (nested AND/OR) bridge and server-side grouping. Targets .NET 8, .NET 10 and .NET 11.</Description>
     <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
   </PropertyGroup>
 

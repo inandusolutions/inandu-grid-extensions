@@ -55,7 +55,7 @@ public sealed class ShopContext : DbContext
 
 /// <summary>
 /// One shared database, seeded once. SQLite in memory by default; set <c>INANDU_TEST_PROVIDER</c> to
-/// <c>sqlserver</c>, <c>postgres</c> or <c>mysql</c> (net8.0 only) and <c>INANDU_TEST_CONNECTION</c> to a server-level connection
+/// <c>sqlserver</c>, <c>postgres</c> (not on net11.0 yet: no Npgsql release for EF Core 11) or <c>mysql</c> (net8.0 only) and <c>INANDU_TEST_CONNECTION</c> to a server-level connection
 /// string (a user that can create databases) to run the same tests against a real server. Each fixture
 /// creates its own throw-away database and drops it on dispose.
 /// </summary>
@@ -95,6 +95,7 @@ public sealed class ShopFixture : IDisposable
                 break;
             }
 
+#if !NO_NPGSQL
             case "postgres":
             {
                 // Seed timestamps are DateTimeKind.Unspecified; keep Npgsql's pre-6 behaviour so they map to `timestamp`.
@@ -110,6 +111,8 @@ public sealed class ShopFixture : IDisposable
                 };
                 break;
             }
+
+#endif
 
 #if HAS_MYSQL
             case "mysql":

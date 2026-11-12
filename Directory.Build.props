@@ -2,7 +2,7 @@
 
   <!-- Shared settings for every project in the repo. Project-specific overrides live in each .csproj. -->
   <PropertyGroup>
-    <!-- Pinned so the library compiles identically on the .NET 8 and .NET 10 SDKs. -->
+    <!-- Pinned so the library compiles identically on the .NET 8, .NET 10 and .NET 11 SDKs. -->
     <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>

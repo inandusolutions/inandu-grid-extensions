@@ -6,18 +6,18 @@ What runs with what. Anything not listed here is untested.
 
 | Package | Targets | Notes |
 | --- | --- | --- |
-| `Inandu.Grid.Extensions` | `net8.0`, `net10.0` | no dependencies on ASP.NET Core or EF Core |
-| `Inandu.Grid.Extensions.AspNetCore` | `net8.0`, `net10.0` | uses the shared framework (`Microsoft.AspNetCore.App`) |
-| `Inandu.Grid.Extensions.EntityFrameworkCore` | `net8.0`, `net10.0` | EF Core `8.0.11` on net8.0, `10.0.14` on net10.0 |
+| `Inandu.Grid.Extensions` | `net8.0`, `net10.0`, `net11.0` | no dependencies on ASP.NET Core or EF Core |
+| `Inandu.Grid.Extensions.AspNetCore` | `net8.0`, `net10.0`, `net11.0` | uses the shared framework (`Microsoft.AspNetCore.App`) |
+| `Inandu.Grid.Extensions.EntityFrameworkCore` | `net8.0`, `net10.0`, `net11.0` | EF Core `8.0.11` on net8.0, `10.0.14` on net10.0, `11.0.0` on net11.0 |
 
-The `net10.0` target is built when the .NET 10 SDK is used. All three packages of a release share one
+The `net10.0` target is built with the .NET 10 SDK or later and `net11.0` with the .NET 11 SDK. Existing `net8.0` and `net10.0` consumers are unaffected. All three packages of a release share one
 version number; install matching versions.
 
 ### Databases
 
 The EF Core tests (`Inandu.Grid.Extensions.EntityFrameworkCore.Tests`) run in CI against **SQLite**
-(in memory), **SQL Server 2022**, **PostgreSQL 17** and **MySQL 8.4**. SQLite, SQL Server and PostgreSQL run on net8.0 and
-net10.0; MySQL runs on net8.0 only, because the Pomelo provider has no EF Core 10 release yet. The same tests run on each
+(in memory), **SQL Server 2022**, **PostgreSQL 17** and **MySQL 8.4**. SQLite and SQL Server run on net8.0, net10.0 and net11.0; PostgreSQL on net8.0 and net10.0 (Npgsql has no EF Core 11 release yet);
+MySQL runs on net8.0 only, because the Pomelo provider has no EF Core 10 release yet. The same tests run on each
 provider: paging, sorting, filters, advanced filter, grouping, distinct, aggregates, keyset (including null sort keys),
 deny-by-default and projections. Other providers (Oracle, MariaDB) are not covered: test the endpoints you
 expose, in particular string filters (`Contains`, `StartsWith`), case sensitivity and grouping.

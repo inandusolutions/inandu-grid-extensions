@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '10.0'))">net8.0;net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '11.0'))">net8.0;net10.0;net11.0</TargetFrameworks>
 
     <RootNamespace>Inandu.Grid.Extensions.AspNetCore</RootNamespace>
     <AssemblyName>Inandu.Grid.Extensions.AspNetCore</AssemblyName>
@@ -14,7 +15,7 @@
     <!-- Fail the pack on a breaking public-API change against the last released version. -->
     <EnablePackageValidation>true</EnablePackageValidation>
     <PackageValidationBaselineVersion>0.6.0</PackageValidationBaselineVersion>
-    <Description>ASP.NET Core binding for Inandu.Grid.Extensions — [FromInanduGrid] model binder and a minimal-API helper that bind an inandu-grid serverSide request straight from the HTTP request. Targets .NET 8 and .NET 10.</Description>
+    <Description>ASP.NET Core binding for Inandu.Grid.Extensions — [FromInanduGrid] model binder and a minimal-API helper that bind an inandu-grid serverSide request straight from the HTTP request. Targets .NET 8, .NET 10 and .NET 11.</Description>
     <PackageReleaseNotes>See the CHANGELOG at the repository root.</PackageReleaseNotes>
     <PackageTags>inandu-grid;angular;react;vue;data-grid;server-side;aspnetcore;model-binder;minimal-api</PackageTags>
   </PropertyGroup>
