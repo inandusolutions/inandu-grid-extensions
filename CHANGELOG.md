@@ -6,11 +6,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-19
+
 ### Added
 
 - **.NET 11 support.** All three packages now also target `net11.0` (built when the .NET 11 SDK is used), next to `net8.0`
   and `net10.0`, which are unchanged. EF Core 11.0.0 is used on `net11.0`. Tests run on all three runtimes. The PostgreSQL
   EF Core test provider is skipped on `net11.0` until Npgsql publishes an EF Core 11 release.
+
+### Tests
+
+- Dependency updates in the test projects and the playground (MySqlConnector 3.0.0, System.Security.Cryptography.Pkcs 11.0.0,
+  Swashbuckle.AspNetCore 11.0.1, the EF Core and test-framework groups). They do not change the published packages.
 
 ## [0.8.0] - 2026-11-05
 
@@ -253,7 +260,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `InanduGridResult<T>` (`Data`, `Total`, `Page`, `PageSize`, `PageCount`).
 - ASP.NET Core minimal-API playground with a real `<inandu-grid serverSide>` front end.
 
-[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/inandusolutions/inandu-grid-extensions/compare/v0.6.0...v0.6.1
